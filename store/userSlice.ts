@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
+  id: '',
   name: '',
   username: '',
   email:'',
@@ -20,8 +21,9 @@ export const userSlice = createSlice({
         // state.username = action.payload.username
         // state.access_token = action.payload.access_token
 
-        const {name, username, email, access_token, isAdmin, password, phone, courseBuyed} = action.payload
+        const {id, name, username, email, access_token, isAdmin, password, phone, courseBuyed} = action.payload
 
+        state.id = id || ''
         state.name = name 
         state.username = username
         state.email = email

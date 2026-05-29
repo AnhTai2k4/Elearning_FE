@@ -4,14 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 const categories = [
-  "Từ vựng và ngữ pháp",
-  "Review đề thi",
-  "Thông tin kì thi",
-  "Lịch thi",
-  "Listening",
-  "Reading",
-  "Writing",
-  "Speaking",
+  "Đại số",
+  "Hình học",
+  "Giải tích",
+  "Tổ hợp - Xác suất",
+  "Đề thi & Đáp án",
+  "Mẹo giải nhanh",
+  "Tin tức thi cử",
   "Vinh danh học viên"
 ];
 
@@ -19,51 +18,51 @@ const categories = [
 const newsData = [
   {
     id: 1,
-    category: "Từ vựng và ngữ pháp",
+    category: "Đại số",
     day: "T7",
-    date: "19/07",
-    title: "Đề thi minh họa VSTEP Reading 2025 kèm đáp án chi tiết (Đề số 5)",
-    link: "/de-thi-5"
+    date: "10/05",
+    title: "Tổng hợp 30 dạng bài Phương trình - Bất phương trình thường gặp trong đề thi",
+    link: "/dai-so-pt-bpt"
   },
   {
     id: 2,
-    category: "Từ vựng và ngữ pháp",
-    day: "T7",
-    date: "19/07",
-    title: "Đề thi minh họa VSTEP Reading 2025 kèm đáp án chi tiết (Đề số 7)",
-    link: "/de-thi-7"
+    category: "Đại số",
+    day: "T6",
+    date: "09/05",
+    title: "Phương pháp giải nhanh bài toán Logarit - Mũ trong đề THPT Quốc gia",
+    link: "/logarit-mu"
   },
   {
     id: 3,
-    category: "Từ vựng và ngữ pháp",
+    category: "Đại số",
     day: "T5",
-    date: "17/07",
-    title: "TỔNG HỢP 40 ĐỀ THI VSTEP SPEAKING PART 3 THƯỜNG GẶP (PART 4)",
-    link: "/speaking-part-4"
+    date: "08/05",
+    title: "Chuyên đề Số phức: Từ cơ bản đến nâng cao, bài tập có lời giải chi tiết",
+    link: "/so-phuc"
   },
   {
     id: 4,
-    category: "Từ vựng và ngữ pháp",
+    category: "Hình học",
     day: "T5",
-    date: "17/07",
-    title: "TỔNG HỢP 40 ĐỀ THI VSTEP SPEAKING PART 3 THƯỜNG GẶP (PART 3)",
-    link: "/speaking-part-3"
+    date: "08/05",
+    title: "Tổng hợp các dạng bài Hình học không gian Oxyz thường gặp trong đề thi",
+    link: "/hinh-hoc-oxyz"
   },
   {
     id: 5,
-    category: "Từ vựng và ngữ pháp",
-    day: "T5",
-    date: "17/07",
-    title: "TỔNG HỢP 40 ĐỀ THI VSTEP SPEAKING PART 3 THƯỜNG GẶP (PART 2)",
-    link: "/speaking-part-2"
+    category: "Giải tích",
+    day: "T4",
+    date: "07/05",
+    title: "Phương pháp tính Nguyên hàm - Tích phân: 10 dạng bài quan trọng nhất",
+    link: "/tich-phan"
   },
   {
     id: 6,
-    category: "Từ vựng và ngữ pháp",
-    day: "T5",
-    date: "17/07",
-    title: "TỔNG HỢP 40 ĐỀ THI VSTEP SPEAKING PART 3 THƯỜNG GẶP (PART 1)",
-    link: "/speaking-part-1"
+    category: "Đề thi & Đáp án",
+    day: "T3",
+    date: "06/05",
+    title: "Đề thi thử THPT Quốc gia 2026 môn Toán - Sở GD&ĐT Hà Nội (có đáp án)",
+    link: "/de-thi-thu-hn-2026"
   }
 ];
 
@@ -76,8 +75,8 @@ export default function NewsSection() {
     <section className="w-full py-16 px-4 bg-[#fafafa]">
       <div className="max-w-6xl mx-auto flex flex-col items-center">
         
-        <h2 className="text-3xl md:text-4xl font-extrabold text-[#f15a24] mb-8 text-center">
-          Thông Tin <span className="text-[#0072BC]">Mới Nhất</span>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-[#fbbf24] mb-8 text-center">
+          Tài Liệu & <span className="text-[#1e3a8a]">Tin Tức Mới Nhất</span>
         </h2>
 
         <div className="w-full max-w-5xl mb-12 bg-white rounded-full shadow-sm p-2 flex overflow-x-auto hide-scrollbar border border-gray-100">
@@ -88,8 +87,8 @@ export default function NewsSection() {
                 onClick={() => setActiveTab(cat)}
                 className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 whitespace-nowrap
                   ${activeTab === cat 
-                    ? 'bg-[#f15a24] text-white shadow-md' 
-                    : 'text-gray-700 hover:text-[#f15a24] hover:bg-orange-50'
+                    ? 'bg-[#fbbf24] text-white shadow-md' 
+                    : 'text-gray-700 hover:text-[#fbbf24] hover:bg-yellow-50'
                   }
                 `}
               >
@@ -107,11 +106,11 @@ export default function NewsSection() {
               className="group bg-white rounded-2xl p-6 flex items-center gap-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100"
             >
               <div className="flex flex-col items-center justify-center min-w-[70px] border-r border-gray-200 pr-6">
-                <span className="text-3xl font-black text-[#f15a24]">{news.day}</span>
+                <span className="text-3xl font-black text-[#fbbf24]">{news.day}</span>
                 <span className="text-gray-600 text-sm font-medium mt-1">{news.date}</span>
               </div>
               
-              <div className="text-gray-800 font-semibold text-base leading-relaxed group-hover:text-[#0072BC] transition-colors line-clamp-3">
+              <div className="text-gray-800 font-semibold text-base leading-relaxed group-hover:text-[#3b82f6] transition-colors line-clamp-3">
                 {news.title}
               </div>
             </Link>

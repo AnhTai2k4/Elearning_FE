@@ -1,23 +1,30 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use as reactUse } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSelector, useDispatch } from "react-redux";
+import { updateUser } from "@/store/userSlice";
 import axiosClient from "@/utils/axiosClient";
 import Header from "@/components/layout/Header";
+import LoginModal from "@/components/auth/LoginModal";
 
 export default function CheckoutPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const resolvedParams = use(params);
+  const resolvedParams = reactUse(params);
   const slug = resolvedParams.slug;
   const router = useRouter();
+  const dispatch = useDispatch();
+
+  const user = useSelector((state: any) => state.user);
 
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<string>("momo");
+  const [processing, setProcessing] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -36,6 +43,80 @@ export default function CheckoutPage({
       fetchCourse();
     }
   }, [slug]);
+
+  const handlePayment = async () => {
+    // Kiểm tra trạng thái đăng nhập của người dùng
+    const isLoggedIn = !!user?.access_token || !!user?.username;
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const endpoint = "/payment/create-momo-url";
+
+      const response = await axiosClient.post(endpoint, {
+        courseId: course._id,
+      });
+
+      if (response.data?.success && response.data?.paymentUrl) {
+        // Chuyển hướng người dùng đến trang thanh toán của MoMo
+        window.location.href = response.data.paymentUrl;
+      } else {
+        alert(
+          response.data?.message ||
+            "Không lấy được link thanh toán. Vui lòng thử lại."
+        );
+      }
+    } catch (error: any) {
+      console.error("Lỗi thanh toán:", error);
+      alert(
+        error.response?.data?.message ||
+          "Đã xảy ra lỗi trong quá trình xử lý thanh toán."
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleMockPayment = async () => {
+    const isLoggedIn = !!user?.access_token || !!user?.username;
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const response = await axiosClient.post("/payment/mock-success", {
+        courseId: course._id,
+      });
+
+      if (response.data?.success) {
+        // Đồng bộ hóa thông tin user vào localStorage & Redux store
+        const userInfoStr = localStorage.getItem("user_info");
+        if (userInfoStr) {
+          const userInfo = JSON.parse(userInfoStr);
+          const boughtList = userInfo.courseBuyed || [];
+          if (!boughtList.includes(response.data.courseId)) {
+            userInfo.courseBuyed = [...boughtList, response.data.courseId];
+            localStorage.setItem("user_info", JSON.stringify(userInfo));
+            dispatch(updateUser(userInfo));
+          }
+        }
+        alert("Mock thanh toán thành công! Khóa học của bạn đã được kích hoạt.");
+        router.push(`/khoa-hoc/${response.data.courseSlug}`);
+      } else {
+        alert(response.data?.message || "Lỗi mock thanh toán");
+      }
+    } catch (error: any) {
+      console.error("Lỗi mock thanh toán:", error);
+      alert(error.response?.data?.message || "Đã xảy ra lỗi.");
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -57,7 +138,7 @@ export default function CheckoutPage({
           </h2>
           <button
             onClick={() => router.back()}
-            className="text-blue-600 hover:underline mt-4 inline-block"
+            className="text-blue-600 hover:underline mt-4 inline-block bg-transparent border-0 cursor-pointer"
           >
             Quay lại
           </button>
@@ -71,8 +152,7 @@ export default function CheckoutPage({
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 mt-8">
-        <div className="bg-white rounded shadow-sm border border-gray-200">
-          
+        <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
           {/* Section 1: Chi tiết đơn hàng */}
           <div className="p-6">
             <h2 className="text-blue-600 font-bold text-[15px] border-b border-gray-200 pb-3 mb-4">
@@ -82,9 +162,14 @@ export default function CheckoutPage({
             <div className="flex justify-between items-center pb-4 border-b border-gray-200 border-dashed mb-4">
               <div className="font-bold text-[15px] text-gray-800">
                 {course.title}
-                <div className="mt-1">{course.price?.toLocaleString("vi-VN")} VND</div>
+                <div className="mt-1 font-normal text-gray-600">
+                  {course.price?.toLocaleString("vi-VN")} VND
+                </div>
               </div>
-              <button className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+              <button
+                onClick={() => router.back()}
+                className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors border-0 bg-transparent cursor-pointer"
+              >
                 ✕
               </button>
             </div>
@@ -95,21 +180,25 @@ export default function CheckoutPage({
             </div>
 
             <div className="mb-6">
-              <h3 className="font-bold text-[15px] text-gray-800 mb-2">Mã Khuyến mại</h3>
+              <h3 className="font-bold text-[15px] text-gray-800 mb-2">
+                Mã Khuyến mại
+              </h3>
               <div className="flex">
-                <input 
-                  type="text" 
-                  placeholder="Nhập mã khuyến mại" 
+                <input
+                  type="text"
+                  placeholder="Nhập mã khuyến mại"
                   className="flex-1 border border-gray-300 rounded-l px-4 py-2 text-sm focus:outline-none focus:border-red-500"
                 />
-                <button className="bg-red-600 text-white font-bold px-6 py-2 rounded-r hover:bg-red-700 transition-colors text-sm">
+                <button className="bg-red-600 text-white font-bold px-6 py-2 rounded-r hover:bg-red-700 transition-colors text-sm border-0 cursor-pointer">
                   Áp dụng
                 </button>
               </div>
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-              <span className="font-bold text-[15px] text-gray-800">Tổng cộng</span>
+              <span className="font-bold text-[15px] text-gray-800">
+                Tổng cộng
+              </span>
               <span className="font-bold text-[18px] text-[#f15a24]">
                 {course.price?.toLocaleString("vi-VN")} VND
               </span>
@@ -118,70 +207,70 @@ export default function CheckoutPage({
 
           {/* Section 2: Phương thức thanh toán */}
           <div className="p-6 border-t border-gray-200 bg-gray-50/30">
-            <h2 className="text-gray-800 text-[15px] mb-4">
-              2. Chọn phương thức thanh toán
+            <h2 className="text-gray-800 text-[15px] mb-4 font-bold">
+              2. Phương thức thanh toán
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <label 
-                className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-all ${
-                  paymentMethod === 'momo' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-300 bg-white hover:border-gray-400'
-                }`}
-              >
-                <input 
-                  type="radio" 
-                  name="paymentMethod" 
-                  value="momo"
-                  checked={paymentMethod === 'momo'}
-                  onChange={() => setPaymentMethod('momo')}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-[14px] text-gray-800">Thanh toán qua ví MoMo</span>
-              </label>
-
-              <label 
-                className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-all ${
-                  paymentMethod === 'bank' ? 'border-blue-500 bg-blue-50/30' : 'border-gray-300 bg-white hover:border-gray-400'
-                }`}
-              >
-                <input 
-                  type="radio" 
-                  name="paymentMethod" 
-                  value="bank"
-                  checked={paymentMethod === 'bank'}
-                  onChange={() => setPaymentMethod('bank')}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-[14px] text-gray-800">Thanh toán trực tuyến qua ngân hàng</span>
-              </label>
+            <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg flex items-center gap-4 mb-6 shadow-sm">
+              <div className="w-12 h-12 bg-[#a50064] rounded-xl flex items-center justify-center font-bold text-white text-base shadow-inner">
+                MoMo
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-800 text-[14px]">Thanh toán qua Ví điện tử MoMo</h4>
+                <p className="text-xs text-gray-500 mt-0.5">Hỗ trợ thanh toán nhanh chóng bằng mã QR MoMo Sandbox.</p>
+              </div>
             </div>
 
-            <div className="text-[14px] text-gray-800 leading-relaxed space-y-1 mb-6">
-              <p>- Kiểm tra lại thông tin đơn hàng trước khi nhấn <strong className="font-bold">tiếp tục</strong>.</p>
-              <p>- Sau khi thanh toán thành công, Bạn vào trang lịch sử giao dịch để kiểm tra đơn hàng hoặc kiểm tra email của bạn.</p>
+            <div className="text-[14px] text-gray-600 leading-relaxed space-y-1 mb-6">
+              <p>
+                - Kiểm tra lại thông tin đơn hàng trước khi nhấn{" "}
+                <strong className="font-bold text-gray-800">tiếp tục</strong>.
+              </p>
+              <p>
+                - Sau khi thanh toán thành công, hệ thống sẽ tự động kích hoạt
+                khóa học và chuyển hướng bạn về lại trang bài học.
+              </p>
             </div>
           </div>
 
           {/* Actions */}
           <div className="bg-gray-100 p-6 rounded-b flex justify-center gap-4">
-            <button 
+            <button
               onClick={() => router.back()}
-              className="px-8 py-2.5 border-2 border-black text-black font-bold text-sm bg-white hover:bg-gray-50 transition-colors"
+              disabled={processing}
+              className="px-8 py-2.5 border-2 border-black text-black font-bold text-sm bg-white hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
             >
               Quay lại
             </button>
-            <button 
-              onClick={() => {
-                alert(`Sẽ chuyển hướng thanh toán qua ${paymentMethod === 'momo' ? 'MoMo' : 'Ngân hàng'}!`);
-              }}
-              className="px-8 py-2.5 bg-red-600 text-white font-bold text-sm border-2 border-black hover:bg-red-700 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            <button
+              onClick={handlePayment}
+              disabled={processing}
+              className="px-8 py-2.5 bg-red-600 text-white font-bold text-sm border-2 border-black hover:bg-red-700 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
-              Tiếp tục
+              {processing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Đang xử lý...
+                </>
+              ) : (
+                "Tiếp tục"
+              )}
+            </button>
+            <button
+              onClick={handleMockPayment}
+              disabled={processing}
+              className="px-8 py-2.5 bg-[#6c5ce7] text-white font-bold text-sm border-2 border-black hover:bg-[#5b4dbf] transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer disabled:opacity-50"
+            >
+              Test Thanh Toán (Mock)
             </button>
           </div>
-
         </div>
       </div>
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   );
 }

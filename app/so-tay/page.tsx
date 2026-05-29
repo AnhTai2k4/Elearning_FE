@@ -2,250 +2,518 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
+import { useSelector } from 'react-redux';
+import MonthTarget, { TargetRow } from '@/components/monthTarget';
+import DayPlan, { DayPlanRow } from '@/components/dayPlan';
+import { PlanService } from '@/services/PlanService';
 
 export default function NotebookPage() {
-  const [activeTab, setActiveTab] = useState<'goals' | 'actions' | 'summary'>('goals');
-  const [status, setStatus] = useState<'draft' | 'submitted' | 'reviewed'>('draft');
-
-  // --- DỮ LIỆU MẪU ---
-  const [goals, setGoals] = useState('Mục tiêu tuần 2 (Tháng 4):\n- Hoàn thành nghe chép chính tả 3 bài test.\n- Thuộc 200 từ vựng chủ đề Giáo dục và Môi trường.\n- Viết 2 bài luận Task 2 (Target 6.0).');
+  const user = useSelector((state: any) => state.user);
   
-  const [tasks, setTasks] = useState([
-    { id: 1, aspect: 'Luyện Nghe VSTEP', time: '08:00 - 09:30', action: 'Nghe chép chính tả Part 1', score: 8 },
-    { id: 2, aspect: 'Từ vựng', time: '14:00 - 15:00', action: 'Học 50 từ vựng chủ đề Giáo dục', score: 7 },
-    { id: 3, aspect: 'Thể thao', time: '17:30 - 18:30', action: 'Chạy bộ 3km', score: 9 },
-  ]);
-  const [reflection, setReflection] = useState('Hôm nay nghe còn sai nhiều âm đuôi s/ed, nhưng đã hoàn thành đủ target chạy bộ.');
+  // Date and selector states
+  const [selectedMonth, setSelectedMonth] = useState<number>(5); // May
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  
+  // Goals state using modal TargetRow type
+  const [goals, setGoals] = useState<TargetRow[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [summary, setSummary] = useState('Tổng kết tuần:\n- Đã hoàn thành 80% mục tiêu đề ra.\n- Từ vựng học khá tốt nhưng phần Viết luận vẫn còn chậm, chưa kiểm soát tốt thời gian.\n- Cần cải thiện tốc độ tư duy ý tưởng trong tuần tới.');
+  // Active view controller: 'dashboard' | 'day-plan'
+  const [activeView, setActiveView] = useState<'dashboard' | 'day-plan'>('dashboard');
 
-  const handleSubmit = () => {
-    setStatus('submitted');
+  // Currently selected day in the calendar grid
+  const [selectedDay, setSelectedDay] = useState<number>(22);
+
+  // Store day plan details mapping: "day-month-year" -> plan data
+  const [dayPlans, setDayPlans] = useState<Record<string, { 
+    rows: DayPlanRow[]; 
+    reflection: string; 
+    status: 'draft' | 'submitted' | 'reviewed';
+    selfScore?: number;
+    aiScore?: number;
+    aiFeedback?: string;
+    teacherComment?: string;
+    teacherScore?: number;
+    teacherCommentAt?: string;
+  }>>({});
+
+  // Calendar marked days: mapping day number -> state ('completed' | 'planned' | 'none')
+  const [markedDays, setMarkedDays] = useState<Record<number, 'completed' | 'planned' | 'none'>>({});
+
+  // Sync data from database using useEffect and PlanService
+  React.useEffect(() => {
+    if (!user.id) return;
+
+    // 1. Fetch Monthly Goal
+    PlanService.getGoal(user.id, selectedMonth, selectedYear)
+      .then(res => {
+        if (res.status === 'OK' && res.data) {
+          setGoals(res.data.goals || []);
+        } else {
+          setGoals([]);
+        }
+      })
+      .catch(err => console.error("Error fetching goals:", err));
+
+    // 2. Fetch all Daily Actions for this month
+    const startStr = `${selectedYear}-${selectedMonth < 10 ? '0' + selectedMonth : selectedMonth}-01`;
+    const endStr = `${selectedYear}-${selectedMonth < 10 ? '0' + selectedMonth : selectedMonth}-31`;
+    PlanService.getDailyActions(user.id, startStr, endStr)
+      .then(res => {
+        if (res.status === 'OK' && res.data) {
+          const newMarked: Record<number, 'completed' | 'planned' | 'none'> = {};
+          const newPlansMap: Record<string, { 
+            rows: DayPlanRow[]; 
+            reflection: string; 
+            status: 'draft' | 'submitted' | 'reviewed';
+            selfScore?: number;
+            aiScore?: number;
+            aiFeedback?: string;
+            teacherComment?: string;
+            teacherScore?: number;
+            teacherCommentAt?: string;
+          }> = {};
+          
+          res.data.forEach((action: any) => {
+            const actDate = new Date(action.date);
+            const dayNum = actDate.getDate();
+            newMarked[dayNum] = (action.status === 'submitted' || action.status === 'reviewed')
+              ? 'completed'
+              : 'planned';
+            
+            const dateKey = `${dayNum}-${selectedMonth}-${selectedYear}`;
+            newPlansMap[dateKey] = {
+              rows: action.tasks || [],
+              reflection: action.reflection || '',
+              status: action.status || 'draft',
+              selfScore: action.selfScore,
+              aiScore: action.aiScore,
+              aiFeedback: action.aiFeedback,
+              teacherComment: action.teacherComment,
+              teacherScore: action.teacherScore,
+              teacherCommentAt: action.teacherCommentAt
+            };
+          });
+          setMarkedDays(newMarked);
+          setDayPlans(newPlansMap);
+        } else {
+          setMarkedDays({});
+          setDayPlans({});
+        }
+      })
+      .catch(err => console.error("Error fetching daily actions:", err));
+  }, [user.id, selectedMonth, selectedYear]);
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(prev => prev - 1);
+    } else {
+      setSelectedMonth(prev => prev - 1);
+    }
   };
 
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(prev => prev + 1);
+    } else {
+      setSelectedMonth(prev => prev + 1);
+    }
+  };
+
+  const handleSaveGoals = (newGoals: TargetRow[]) => {
+    if (!user.id) return;
+    PlanService.createOrUpdateGoal({
+      studentId: user.id,
+      month: selectedMonth,
+      year: selectedYear,
+      goals: newGoals,
+      status: 'draft'
+    })
+    .then(res => {
+      if (res.status === 'OK') {
+        setGoals(newGoals);
+      }
+    })
+    .catch(err => console.error("Error saving goals:", err));
+  };
+
+  const handleSaveDayPlan = (plan: { rows: DayPlanRow[]; reflection: string; status: 'draft' | 'submitted' }) => {
+    if (!user.id) return;
+    const dateStr = `${selectedYear}-${selectedMonth < 10 ? '0' + selectedMonth : selectedMonth}-${selectedDay < 10 ? '0' + selectedDay : selectedDay}`;
+    
+    PlanService.createOrUpdateDailyAction({
+      studentId: user.id,
+      date: new Date(dateStr),
+      tasks: plan.rows,
+      reflection: plan.reflection,
+      selfScore: plan.rows.length > 0 ? Math.round(plan.rows.reduce((acc, r) => acc + r.score, 0) / plan.rows.length) : 10,
+      status: plan.status
+    })
+    .then(res => {
+      if (res.status === 'OK' && res.data) {
+        const dateKey = `${selectedDay}-${selectedMonth}-${selectedYear}`;
+        const savedAction = res.data;
+        setDayPlans(prev => ({
+          ...prev,
+          [dateKey]: {
+            rows: savedAction.tasks || [],
+            reflection: savedAction.reflection || '',
+            status: savedAction.status || 'draft',
+            selfScore: savedAction.selfScore,
+            aiScore: savedAction.aiScore,
+            aiFeedback: savedAction.aiFeedback,
+            teacherComment: savedAction.teacherComment,
+            teacherScore: savedAction.teacherScore,
+            teacherCommentAt: savedAction.teacherCommentAt
+          }
+        }));
+        setMarkedDays(prev => ({
+          ...prev,
+          [selectedDay]: (plan.status === 'submitted' || plan.status === 'reviewed')
+            ? 'completed'
+            : 'planned'
+        }));
+        setActiveView('dashboard');
+      }
+    })
+    .catch(err => console.error("Error saving daily action:", err));
+  };
+
+  // Get calendar days for chosen month dynamically
+  const getCalendarDays = () => {
+    const firstDayIndex = (new Date(selectedYear, selectedMonth - 1, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const prevDaysInMonth = new Date(selectedYear, selectedMonth - 1, 0).getDate();
+    
+    const days = [];
+    // Prev month padding
+    for (let i = firstDayIndex; i > 0; i--) {
+      days.push({ day: prevDaysInMonth - i + 1, isCurrentMonth: false, isToday: false });
+    }
+    // Current month days
+    const today = new Date();
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isToday = today.getDate() === i && 
+                      today.getMonth() === selectedMonth - 1 && 
+                      today.getFullYear() === selectedYear;
+      days.push({ day: i, isCurrentMonth: true, isToday });
+    }
+    // Next month padding (up to 35 or 42 cells dynamically to avoid empty 6th row)
+    const totalCells = days.length <= 35 ? 35 : 42;
+    const nextPadding = totalCells - days.length;
+    for (let i = 1; i <= nextPadding; i++) {
+      days.push({ day: i, isCurrentMonth: false, isToday: false });
+    }
+    return days;
+  };
+
+  const calendarDays = getCalendarDays();
+
+  // Statistics values
+  const plannedDaysCount = Object.values(markedDays).filter(v => v === 'completed').length;
+  const completedWeeks = plannedDaysCount >= 4 ? 1 : 0;
+  const totalHours = Object.values(dayPlans)
+    .filter(plan => plan.status === 'submitted' || plan.status === 'reviewed')
+    .reduce((sum, plan) => {
+      const planSum = plan.rows.reduce((acc, row) => acc + (Number(row.actualTime) || 0), 0);
+      return sum + planSum;
+    }, 0);
+  const submittedPlans = Object.values(dayPlans).filter(
+    plan => plan.status === 'submitted' || plan.status === 'reviewed'
+  );
+  const disciplineScore = submittedPlans.length > 0
+    ? (submittedPlans.reduce((sum, plan) => sum + (plan.selfScore ?? 10), 0) / submittedPlans.length).toFixed(1)
+    : '0';
+
+  if (activeView === 'day-plan') {
+    return (
+      <div className="min-h-screen bg-[#faf8f6] font-sans text-gray-800 pb-20">
+        <Header />
+        <DayPlan
+          dateLabel={`${selectedDay < 10 ? '0' + selectedDay : selectedDay}/${selectedMonth < 10 ? '0' + selectedMonth : selectedMonth}/${selectedYear}`}
+          onBack={() => setActiveView('dashboard')}
+          onSavePlan={handleSaveDayPlan}
+          initialPlan={dayPlans[`${selectedDay}-${selectedMonth}-${selectedYear}`]}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#f4f7f6] font-sans text-gray-800 pb-20">
+    <div className="min-h-screen bg-[#faf8f6] font-sans text-gray-800 pb-20">
       <Header />
 
-      {/* TOOLBAR TEST (Chỉ dùng cho Dev) */}
-      <div className="bg-yellow-100 border-b border-yellow-300 p-3 flex justify-center gap-4 text-sm font-bold">
-        <span>Góc Test UI:</span>
-        <button onClick={() => setStatus('draft')} className={`px-3 py-1 rounded ${status === 'draft' ? 'bg-yellow-400' : 'bg-white'}`}>1. Đang viết (Nháp)</button>
-        <button onClick={() => setStatus('submitted')} className={`px-3 py-1 rounded ${status === 'submitted' ? 'bg-yellow-400' : 'bg-white'}`}>2. Đã gửi (Chờ duyệt)</button>
-        <button onClick={() => setStatus('reviewed')} className={`px-3 py-1 rounded ${status === 'reviewed' ? 'bg-yellow-400' : 'bg-white'}`}>3. GV/AI đã nhận xét</button>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 mt-8">
-        {/* Tên Học viên & Tiêu đề chung */}
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-[#002b49]">Sổ tay Học tập</h1>
-            <p className="text-gray-500 mt-2">Học viên: <span className="font-bold text-[#f15a24]">Thành Công Trần</span></p>
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 mt-8">
+        
+        {/* Top Header section: Title and Month dropdown */}
+        <div className="flex items-center gap-4 mb-8">
+          <h1 className="text-[26px] font-black text-[#005082]">Tổng quan</h1>
+          <div className="relative">
+            <select
+              value={`${selectedMonth}-${selectedYear}`}
+              onChange={(e) => {
+                const [m, y] = e.target.value.split('-').map(Number);
+                setSelectedMonth(m);
+                setSelectedYear(y);
+              }}
+              className="appearance-none bg-white border border-gray-200 rounded-full px-5 py-1.5 pr-10 text-[13px] font-medium text-gray-600 outline-none shadow-sm cursor-pointer hover:border-gray-300 transition-all"
+            >
+              <option value="5-2026">Tháng 5, 2026</option>
+              <option value="6-2026">Tháng 6, 2026</option>
+              <option value="7-2026">Tháng 7, 2026</option>
+            </select>
+            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 text-[10px]">
+              ▼
+            </div>
           </div>
-          {status === 'draft' && <span className="bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm font-bold border border-gray-200">Đang lưu nháp</span>}
-          {status === 'submitted' && <span className="bg-blue-50 text-[#0072BC] px-4 py-1.5 rounded-full text-sm font-bold border border-blue-200">Đã gửi thành công</span>}
-          {status === 'reviewed' && <span className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-sm font-bold border border-green-200">Đã có nhận xét</span>}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-8 border-b border-gray-200 mb-8">
-          <button 
-            onClick={() => setActiveTab('goals')}
-            className={`pb-3 font-bold text-[16px] border-b-2 transition-all ${activeTab === 'goals' ? 'border-[#f15a24] text-[#f15a24]' : 'border-transparent text-gray-500 hover:text-[#f15a24]'}`}
-          >
-            1. Mục tiêu (Tuần/Tháng)
-          </button>
-          <button 
-            onClick={() => setActiveTab('actions')}
-            className={`pb-3 font-bold text-[16px] border-b-2 transition-all ${activeTab === 'actions' ? 'border-[#f15a24] text-[#f15a24]' : 'border-transparent text-gray-500 hover:text-[#f15a24]'}`}
-          >
-            2. Hành động (Hàng ngày)
-          </button>
-          <button 
-            onClick={() => setActiveTab('summary')}
-            className={`pb-3 font-bold text-[16px] border-b-2 transition-all ${activeTab === 'summary' ? 'border-[#f15a24] text-[#f15a24]' : 'border-transparent text-gray-500 hover:text-[#f15a24]'}`}
-          >
-            3. Tổng kết
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* 4 Statistics Cards Row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
           
-          {/* ================= CỘT TRÁI: VÙNG NHẬP LIỆU (8 Cột) ================= */}
-          <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-              
-              {/* TAB MỤC TIÊU */}
-              {activeTab === 'goals' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#002b49] mb-4">Mục tiêu của bạn</h2>
-                  <p className="text-sm text-gray-500 mb-4">Hãy viết ra những mục tiêu bạn muốn đạt được trong tuần hoặc tháng tới. Giáo viên sẽ xem và tư vấn cho bạn.</p>
-                  <textarea 
-                    value={goals}
-                    disabled={status !== 'draft'}
-                    onChange={(e) => setGoals(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg p-4 h-48 outline-none focus:border-[#0072BC] text-[15px] resize-none disabled:bg-gray-50 disabled:text-gray-700"
-                    placeholder="Ví dụ: Tuần này tôi muốn hoàn thành 3 đề thi đọc..."
-                  />
-                </div>
-              )}
-
-              {/* TAB HÀNH ĐỘNG */}
-              {activeTab === 'actions' && (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-[#002b49]">Kế hoạch hành động ngày 10/04/2026</h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 text-gray-600 text-sm border-b border-gray-200">
-                          <th className="p-3 font-semibold">Khía cạnh</th>
-                          <th className="p-3 font-semibold w-32">Thời gian</th>
-                          <th className="p-3 font-semibold">Hành động cụ thể</th>
-                          <th className="p-3 font-semibold text-center w-24">Chấm điểm</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-[15px]">
-                        {tasks.map((task) => (
-                          <tr key={task.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="p-3">
-                              <input type="text" value={task.aspect} disabled={status !== 'draft'} className="w-full bg-transparent outline-none disabled:text-gray-700 font-medium text-[#0072BC]" />
-                            </td>
-                            <td className="p-3">
-                              <input type="text" value={task.time} disabled={status !== 'draft'} className="w-full bg-transparent outline-none disabled:text-gray-700" />
-                            </td>
-                            <td className="p-3">
-                              <input type="text" value={task.action} disabled={status !== 'draft'} className="w-full bg-transparent outline-none disabled:text-gray-700" />
-                            </td>
-                            <td className="p-3 text-center">
-                              <input type="number" value={task.score} disabled={status !== 'draft'} className="w-12 text-center border border-gray-200 rounded py-1 disabled:bg-gray-50 disabled:border-transparent outline-none font-bold text-[#f15a24]" />
-                              <span className="text-gray-400 text-sm ml-1">/10</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {status === 'draft' && (
-                    <button className="mt-4 text-[14px] text-[#0072BC] font-medium flex items-center gap-1 hover:underline">
-                      + Thêm việc mới
-                    </button>
-                  )}
-
-                  <div className="mt-8">
-                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                      💡 Bài học & Đúc kết trong ngày
-                    </h3>
-                    <textarea 
-                      value={reflection}
-                      disabled={status !== 'draft'}
-                      onChange={(e) => setReflection(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg p-4 h-32 outline-none focus:border-[#0072BC] text-[15px] resize-none disabled:bg-gray-50 disabled:text-gray-700"
-                      placeholder="Ghi lại những điều bạn học được hoặc niềm vui hôm nay..."
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* TAB TỔNG KẾT */}
-              {activeTab === 'summary' && (
-                <div>
-                  <h2 className="text-xl font-bold text-[#002b49] mb-4">Tổng kết chu kỳ</h2>
-                  <p className="text-sm text-gray-500 mb-4">Hãy nhìn lại quá trình học tập của bạn, những gì làm tốt và những gì cần khắc phục.</p>
-                  <textarea 
-                    value={summary}
-                    disabled={status !== 'draft'}
-                    onChange={(e) => setSummary(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg p-4 h-48 outline-none focus:border-[#0072BC] text-[15px] resize-none disabled:bg-gray-50 disabled:text-gray-700"
-                    placeholder="Ví dụ: Tuần qua tôi đã cố gắng hoàn thành 80% kế hoạch..."
-                  />
-                </div>
-              )}
-
-              {/* Vùng Nút Hành Động Chung */}
-              {status === 'draft' && (
-                <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
-                  <button className="px-6 py-2 rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition-colors">
-                    Lưu nháp
-                  </button>
-                  <button onClick={handleSubmit} className="px-6 py-2 rounded-lg bg-[#f15a24] text-white font-bold hover:bg-[#d94e1d] transition-colors shadow-md">
-                    Gửi nộp cho Giáo viên
-                  </button>
-                </div>
-              )}
+          {/* Card 1: Ngày đã lập kế hoạch */}
+          <div className="bg-[#e6f4ff]/50 rounded-2xl p-5 flex items-center gap-4 border border-blue-100/50 shadow-sm">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm shrink-0">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-blue-600 leading-none mb-1">{plannedDaysCount}</p>
+              <p className="text-[12px] text-gray-500 font-medium">Ngày đã lập kế hoạch</p>
             </div>
           </div>
 
-          {/* ================= CỘT PHẢI: VÙNG ĐÁNH GIÁ (4 Cột) ================= */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-6 space-y-6">
-              
-              {/* TRẠNG THÁI CHƯA NỘP */}
-              {status === 'draft' && (
-                <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl text-center">
-                  <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
-                  <h3 className="font-bold text-[#002b49] mb-2">Chưa gửi nội dung</h3>
-                  <p className="text-sm text-gray-600">Hãy hoàn thiện phần nội dung bên trái và bấm Gửi để nhận được đánh giá từ Giáo viên và AI nhé!</p>
-                </div>
-              )}
+          {/* Card 2: Tuần hoàn thành mục tiêu */}
+          <div className="bg-[#f0edff]/50 rounded-2xl p-5 flex items-center gap-4 border border-purple-100/50 shadow-sm">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-purple-500 shadow-sm shrink-0">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-purple-600 leading-none mb-1">{completedWeeks}</p>
+              <p className="text-[12px] text-gray-500 font-medium">Tuần hoàn thành mục tiêu</p>
+            </div>
+          </div>
 
-              {/* TRẠNG THÁI ĐÃ NỘP, CHỜ CHẤM (SUMBITTED) */}
-              {status === 'submitted' && (
-                <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-xl text-center">
-                  <div className="w-12 h-12 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl animate-pulse">⏳</div>
-                  <h3 className="font-bold text-yellow-800 mb-2">Đang chờ nhận xét</h3>
-                  <p className="text-sm text-yellow-700">Giáo viên đã nhận được bài nộp của bạn và sẽ phản hồi sớm nhất có thể.</p>
-                </div>
-              )}
+          {/* Card 3: Giờ thực hiện */}
+          <div className="bg-[#e6f7ed]/50 rounded-2xl p-5 flex items-center gap-4 border border-green-100/50 shadow-sm">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-green-500 shadow-sm shrink-0">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-green-600 leading-none mb-1">{totalHours}</p>
+              <p className="text-[12px] text-gray-500 font-medium">Giờ thực hiện</p>
+            </div>
+          </div>
 
-              {/* FEEDBACK CỦA AI TRONG TAB HÀNH ĐỘNG */}
-              {activeTab === 'actions' && (status === 'submitted' || status === 'reviewed') && (
-                <div className="bg-white border border-[#e0e7ff] p-6 rounded-xl shadow-sm ring-1 ring-indigo-50 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-[#4f46e5] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">AI Trợ Giảng</div>
-                  
-                  <div className="flex items-start gap-4 mb-4 mt-2">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🤖</div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">Đánh giá ngày 10/04</h3>
-                      <div className="flex items-center gap-1 mt-1 text-sm">
-                        Điểm kỷ luật: <span className="font-black text-indigo-600 text-lg ml-1">8.0</span>/10
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-indigo-50 p-4 rounded-lg text-[14px] text-gray-700 leading-relaxed italic border-l-4 border-indigo-400">
-                    "Tiến độ rất tuyệt vời! Bạn đã hoàn thành xuất sắc mục tiêu Thể thao và Nghe chép chính tả. Lần tới, hãy cố gắng phân bổ thêm thời gian 15 phút ôn lại từ vựng vào buổi tối để khắc sâu trí nhớ nhé!"
-                  </div>
-                </div>
-              )}
-
-              {/* FEEDBACK CỦA GIÁO VIÊN */}
-              {status === 'reviewed' && (
-                <div className="bg-white border border-green-200 p-6 rounded-xl shadow-sm ring-1 ring-green-50 relative overflow-hidden animate-fade-in-up">
-                  <div className="absolute top-0 right-0 bg-[#16a34a] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Mentor Nhận Xét</div>
-                  
-                  <div className="flex items-start gap-4 mb-4 mt-2">
-                    <img src="https://ui-avatars.com/api/?name=Co+Giao&background=dcfce7&color=16a34a" alt="Avatar" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-[15px]">Cô Mai VSTEP</h3>
-                      <p className="text-[12px] text-gray-500">Đã nhận xét lúc 21:45</p>
-                    </div>
-                  </div>
-                  
-                  <div className="text-[14px] text-gray-700 leading-relaxed bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                    {activeTab === 'goals' && `"Mục tiêu tuần này của em rất rõ ràng và khả thi. Em hãy chú ý cân đối giữa việc học từ vựng và luyện đề để không bị quá tải nhé. Cô ủng hộ em!"`}
-                    {activeTab === 'actions' && `"Chào Công, cô thấy phần nghe chép chính tả em chấm 8/10 là rất trung thực. Về âm s/ed em lưu ý quy tắc 'Thôi phanh phui...' cô đã dạy ở bài 3 nhé. Tuần này duy trì phong độ tốt lắm!"`}
-                    {activeTab === 'summary' && `"Nhìn lại tuần qua, em đã làm rất tốt việc theo sát kế hoạch đề ra. Việc viết luận chậm là bình thường, sang tuần sau cô sẽ gửi thêm template Writing cho em tham khảo thêm."`}
-                  </div>
-                </div>
-              )}
-
+          {/* Card 4: Điểm kỷ luật trung bình */}
+          <div className="bg-[#ffebe6]/50 rounded-2xl p-5 flex items-center gap-4 border border-red-100/50 shadow-sm">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-red-500 shadow-sm shrink-0">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-red-500 leading-none mb-1">{disciplineScore}</p>
+              <p className="text-[12px] text-gray-500 font-medium">Điểm kỷ luật trung bình</p>
             </div>
           </div>
 
         </div>
+
+        {/* 2-Column Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Column Left (Calendar tracker) - 5 Cols */}
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            
+            {/* Calendar header info */}
+            <div className="flex items-center gap-2 pb-4 border-b border-gray-100 mb-6">
+              <svg className="w-5 h-5 text-[#0072BC]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="font-bold text-[15px] text-[#002b49]">Theo dõi kế hoạch</span>
+            </div>
+
+            {/* Calendar Grid wrapper */}
+            <div className="text-center">
+              {/* Calendar Navigator */}
+              <div className="flex items-center justify-between mb-4 px-2">
+                <button 
+                  onClick={handlePrevMonth} 
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 font-bold"
+                >
+                  &lt;
+                </button>
+                <span className="font-bold text-gray-800 text-[14px]">
+                  Tháng {selectedMonth}, {selectedYear}
+                </span>
+                <button 
+                  onClick={handleNextMonth} 
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 font-bold"
+                >
+                  &gt;
+                </button>
+              </div>
+
+              {/* Day Titles */}
+              <div className="grid grid-cols-7 gap-2 mb-2 text-[12px] font-bold text-gray-500">
+                <div>T.2</div>
+                <div>T.3</div>
+                <div>T.4</div>
+                <div>T.5</div>
+                <div>T.6</div>
+                <div>T.7</div>
+                <div>CN</div>
+              </div>
+
+              {/* Days Numbers */}
+              <div className="grid grid-cols-7 gap-2">
+                {calendarDays.map((item, idx) => {
+                  const isCompleted = markedDays[item.day] === 'completed' && item.isCurrentMonth;
+                  const isPlanned = markedDays[item.day] === 'planned' && item.isCurrentMonth;
+                  const isSelected = selectedDay === item.day && item.isCurrentMonth;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (item.isCurrentMonth) {
+                          setSelectedDay(item.day);
+                        }
+                      }}
+                      className={`h-10 rounded-md border flex items-center justify-center text-[13px] font-bold transition-all relative ${
+                        !item.isCurrentMonth 
+                          ? 'border-transparent text-gray-300 cursor-default' 
+                          : isSelected
+                          ? 'border-gray-400 bg-gray-200/80 text-gray-800 ring-2 ring-gray-300/40'
+                          : isCompleted
+                          ? 'border-green-500 bg-green-50/30 text-green-700'
+                          : isPlanned
+                          ? 'border-blue-300 bg-blue-50/20 text-[#0072BC]'
+                          : 'border-gray-100 bg-white hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      {item.day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Calendar Legend */}
+              <div className="mt-6 pt-4 border-t border-gray-50 flex flex-wrap gap-4 items-center justify-center text-[12px] text-gray-600">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded border border-green-500 bg-green-50/30"></div>
+                  <span>Đã hoàn thành</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded border border-blue-300 bg-blue-50/20"></div>
+                  <span>Đã lên kế hoạch</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded border border-gray-200 bg-white"></div>
+                  <span>Chưa lập kế hoạch</span>
+                </div>
+              </div>
+
+              {/* Lập kế hoạch button for the selected day */}
+              {selectedDay && (
+                <button
+                  onClick={() => setActiveView('day-plan')}
+                  className="w-full mt-5 bg-[#0072BC] hover:bg-[#005e9c] text-white font-bold text-[13px] py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                >
+                  {(markedDays[selectedDay] === 'completed' || markedDays[selectedDay] === 'planned') ? 'Xem kế hoạch hôm nay' : 'Lập kế hoạch ngày hôm nay'}{' '}
+                  <span className="text-base leading-none">→</span>
+                </button>
+              )}
+            </div>
+
+          </div>
+
+          {/* Column Right (Monthly targets) - 7 Cols */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm min-h-[420px] flex flex-col">
+            
+            {/* Header section with title and Add button */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-6 shrink-0">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#0072BC]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="font-bold text-[15px] text-[#002b49]">Mục tiêu trong tháng</span>
+              </div>
+
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="bg-[#0072BC] hover:bg-[#005e9c] text-white font-bold text-[12px] px-4 py-2 rounded-full flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <span>+</span> Lập mục tiêu tháng
+              </button>
+            </div>
+
+            {/* Goal list or Empty state */}
+            <div className="flex-1 flex flex-col justify-center">
+
+              {goals.length > 0 ? (
+                <div className="flex-1 overflow-x-auto w-full pr-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 text-[#002b49] text-[12px] font-bold border-b border-gray-200">
+                        <th className="p-3 w-12 text-center">STT</th>
+                        <th className="p-3">Khía cạnh</th>
+                        <th className="p-3">Dự kiến /Tuần</th>
+                        <th className="p-3">Hành động</th>
+                        <th className="p-3 text-center">Kỳ vọng</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-[13px]">
+                      {goals.map((goal, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-3 text-center font-bold text-gray-400">{idx + 1}</td>
+                          <td className="p-3 font-semibold text-gray-700">{goal.aspect}</td>
+                          <td className="p-3 text-gray-600">{goal.duration}</td>
+                          <td className="p-3 text-gray-600">{goal.action}</td>
+                          <td className="p-3 text-center font-black text-[#f15a24]">{goal.expectedScore}/10</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
+                  <div className="relative w-28 h-28 mb-4 flex items-center justify-center bg-blue-50/50 rounded-full">
+                    {/* Illustration design */}
+                    <svg className="w-16 h-16 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="11" cy="11" r="8" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" strokeWidth="2" strokeLinecap="round" />
+                      <circle cx="11" cy="11" r="3" strokeWidth="1.5" strokeDasharray="3 3" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-400 text-[14px] font-medium max-w-[280px] leading-relaxed">
+                    Bạn chưa lập mục tiêu nào trong tháng này!
+                  </p>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
+
+      {/* Month Target Modal */}
+      <MonthTarget
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveGoals}
+        initialTargets={goals}
+        selectedMonthLabel={`Tháng ${selectedMonth}, ${selectedYear}`}
+      />
     </div>
   );
 }

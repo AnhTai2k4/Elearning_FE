@@ -1,126 +1,142 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useRef } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Autoplay, EffectFade } from 'swiper/modules';
-import type { Swiper as SwiperType } from 'swiper';
+import Image from "next/image";
+import React from "react";
 
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/effect-fade';
-
-const teachers = [
-  {
-    id: 1,
-    name: "CÔ LÊ THÙY DƯƠNG",
-    title: "10 năm kinh nghiệm luyện thi VSTEP",
-    desc1: "Giảng viên giảng dạy tại khoa Sư phạm Tiếng Anh, ĐH Ngoại Ngữ, ĐHQGHN và THPT Chuyên Ngoại Ngữ, ĐHQGHN (2017 – nay), có nhiều năm kinh nghiệm giảng dạy sinh viên và tập huấn giáo viên tại các tỉnh thành (Hải Phòng, Yên Bái, Phú Thọ, Quảng Ninh, …) về bài thi VSTEP 3-5. Hiện là NCS ngành Ngôn Ngữ Học, ĐHQGHN.",
-    desc2: "Tốt nghiệp bằng Xuất sắc hệ CLC ngành Sư phạm Tiếng Anh tại ĐH Ngoại Ngữ, ĐHQGHN. Thạc sĩ ngành Giảng dạy Tiếng Anh của trường Southern New Hampshire, Hoa Kỳ, GPA 4.0/4.0. Ngoài ra, cô cũng là Cựu học sinh chuyên Anh đạt nhiều giải Nhất, Nhì học sinh giỏi Tiếng Anh các cấp Tỉnh, thành phố.",
-    stats: [
-      { label: "VSTEP", score: "9.5/10" },
-      { label: "IELTS", score: "8.0/9.0" }
-    ],
-    image: "https://onthivstep.vn/_next/image?url=%2Fimages%2Ficon%2Fnn6b%2Fteacher0.png&w=1200&q=75"
-  },
-  {
-    id: 2,
-    name: "THẦY DƯƠNG NGUYỄN ANH",
-    title: "Chuyên gia luyện thi VSTEP",
-    desc1: "Hiện nay là Giảng viên Khoa Sư phạm Tiếng Anh tại Đại Học Ngoại ngữ - Đại Học Quốc Gia Hà Nội. Với profile khủng: Là Thạc sỹ lí luận phương pháp giảng dạy bộ môn Tiếng Anh...",
-    desc2: "Trong suốt 9 năm giảng dạy, bằng sự tận tâm, nhiệt huyết và chuyên môn cao, Thầy đã dìu dắt hàng ngàn học viên đạt được chứng chỉ VSTEP.",
-    stats: [], 
-    image: "https://onthivstep.vn/_next/image?url=%2Fimages%2Ficon%2Fnn6b%2Fteacher1.png&w=1200&q=75"
-  }
-];
+const CheckCircleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+  </svg>
+);
 
 export default function TeacherSlider() {
-  const swiperRef = useRef<SwiperType | null>(null);
-
   return (
-    <section className="w-full bg-[#fdf8f4] py-16 px-4 rounded-tl-[100px] overflow-hidden">
-      <div className="max-w-6xl mx-auto relative">
-        
-        <Swiper
-          modules={[Navigation, Autoplay, EffectFade]}
-          effect="fade"
-          fadeEffect={{ crossFade: true }} 
-          loop={true}
-          autoplay={{ delay: 5000, disableOnInteraction: false }}
-          onBeforeInit={(swiper) => {
-            swiperRef.current = swiper;
-          }}
-          className="w-full"
-        >
-          {teachers.map((teacher) => (
-            <SwiperSlide key={teacher.id}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[500px] pb-24 md:pb-20">
-                
-                <div className="flex flex-col relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-[#f15a24] uppercase mb-2">
-                    {teacher.name}
-                  </h2>
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#0072BC] mb-6">
-                    {teacher.title}
-                  </h3>
-                  
-                  <p className="text-gray-700 leading-relaxed text-justify mb-4">
-                    {teacher.desc1}
-                  </p>
-                  <p className="text-gray-700 leading-relaxed text-justify mb-8">
-                    {teacher.desc2}
-                  </p>
+    <section id="teachers" className="py-14 bg-white relative overflow-hidden" aria-labelledby="teachers-heading">
+      {/* Background decoration */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-20 right-20 w-96 h-96 bg-yellow-400 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-blue-400 rounded-full blur-3xl"></div>
+      </div>
 
-                  {teacher.stats && teacher.stats.length > 0 && (
-                    <div className="flex gap-8">
-                      {teacher.stats.map((stat, idx) => (
-                        <div key={idx} className="flex flex-col">
-                          <span className="text-sm font-bold text-[#0072BC] uppercase">{stat.label}</span>
-                          <span className="text-3xl font-bold text-[#0072BC]">{stat.score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      <div className="container mx-auto px-4 relative z-10">
+        <header className="text-center mb-12">
+          <div className="inline-block bg-gradient-to-r from-[#1e3a8a] to-blue-800 text-white px-5 py-1.5 rounded-full mb-3 font-bold shadow-lg text-lg md:text-2xl">
+            👨🏻‍🏫 GIẢNG VIÊN
+          </div>
+          <h2 id="teachers-heading" className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
+            Cam kết đạt ít nhất <span className="text-cyan-500">8 ĐIỂM</span> môn toán
+          </h2>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Nếu theo đúng lộ trình của lớp học!
+          </h3>
+        </header>
 
-                <div className="relative w-full h-full flex justify-center items-end">
-                  <div className="absolute right-0 bottom-10 w-48 h-48 border-[24px] border-[#f15a24] rounded-full border-l-transparent -rotate-45 z-0" />
-                  
-                  <div className="absolute left-10 top-0 w-32 h-32 opacity-30 z-0">
-                    <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(#f15a24 2px, transparent 2px)', backgroundSize: '16px 16px' }}></div>
-                  </div>
-
-                  <div className="relative w-full max-w-[400px] h-[500px] z-10">
-                    <Image 
-                      src={teacher.image} 
-                      alt={teacher.name} 
-                      fill 
-                      className="object-contain object-bottom drop-shadow-2xl" 
-                    />
-                  </div>
-                </div>
-
+        {/* Main Content Grid */}
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-6">
+              {/* Teacher Info */}
+              <div className="space-y-2">
+                <h4 className="text-xl text-gray-700">
+                  Thầy <span className="font-bold">Tô Minh Thành</span> - Founder Trung Tâm ToánMath
+                </h4>
               </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
 
-       
-        <div className="absolute bottom-4 left-0 z-20 flex gap-4">
-          <button 
-            onClick={() => swiperRef.current?.slidePrev()}
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-[#0072BC] shadow-md hover:bg-[#0072BC] hover:text-white transition-colors border border-gray-100"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <button 
-            onClick={() => swiperRef.current?.slideNext()}
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-[#0072BC] shadow-md hover:bg-[#0072BC] hover:text-white transition-colors border border-gray-100"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          </button>
+              {/* Achievements */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#fbbf24] to-orange-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <CheckCircleIcon />
+                  </div>
+                  <div>
+                    <p className="text-gray-700 leading-relaxed text-lg">
+                      Cử nhân <span className="font-bold">Đại học Ngoại Thương</span>
+                    </p>
+                    <p className="text-gray-700 leading-relaxed text-lg">
+                      <span className="font-bold">8+ năm kinh nghiệm</span> dạy Toán
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#fbbf24] to-orange-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <CheckCircleIcon />
+                  </div>
+                  <p className="text-gray-700 leading-relaxed text-lg">
+                    Nổi tiếng về việc đưa rất nhiều học sinh trung bình, thậm chí mất gốc đạt {">"} 9 điểm toán các kỳ thi chỉ trong 1 thời gian ngắn theo học.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#fbbf24] to-orange-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <CheckCircleIcon />
+                  </div>
+                  <p className="text-gray-700 leading-relaxed text-lg">
+                    <span className="font-bold">Chuyên gia phân tích đề thi THPT Quốc gia</span>
+                    <br />
+                    Ôn trúng 45/50 câu đề thi chính thức.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#fbbf24] to-orange-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <CheckCircleIcon />
+                  </div>
+                  <p className="text-gray-700 leading-relaxed text-lg">
+                    Giáo viên Toán duy nhất cam kết được điểm số và đảm bảo tỉ lệ{" "}
+                    <span className="font-bold">100% đỗ Đại Học</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right - Teacher Image */}
+            <div className="relative flex justify-center">
+              {/* Yellow decorative circle */}
+              <div className="absolute -bottom-8 -left-8 w-80 h-80 bg-gradient-to-br from-[#fbbf24] to-orange-400 rounded-full opacity-30 blur-2xl"></div>
+              <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-[#fbbf24] to-orange-300 rounded-full -z-10"></div>
+              
+              {/* Teacher image */}
+              <div className="relative z-10">
+                <img
+                  src="/images/math_assets/bd36b26f465734ac6ed738bfb7b629af3f695065.png"
+                  alt="Thầy Tô Minh Thành - Founder ToánMath"
+                  className="w-full max-w-md h-auto object-cover rounded-3xl shadow-2xl"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Section */}
+          <div className="grid md:grid-cols-3 gap-8 mt-16 pt-8 border-t border-gray-100">
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-cyan-500 mb-3">5000+</div>
+              <p className="text-gray-600 text-lg">
+                Học sinh khắp VN theo dõi trên
+                <br />
+                Fanpage, Youtube, Tiktok
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-cyan-500 mb-3">90%</div>
+              <p className="text-gray-600 text-lg">
+                Học sinh trên 8 điểm
+                <br />
+                trong kỳ thi Đại học
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-cyan-500 mb-3">Trực Tuyến</div>
+              <p className="text-gray-600 text-lg">
+                Giảng dạy hàng ngày trên các nền tảng
+                <br />
+                <span className="font-bold text-red-600">học online</span>
+              </p>
+            </div>
+          </div>
         </div>
-
       </div>
     </section>
   );

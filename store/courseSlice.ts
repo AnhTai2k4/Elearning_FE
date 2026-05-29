@@ -8,6 +8,9 @@ interface Course {
     price: number;
     image: string;
     slug: string;
+    grade?: number;
+    tags?: string[];
+    releaseDate?: string;
 }
 
 interface CourseState {

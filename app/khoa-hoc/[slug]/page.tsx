@@ -93,6 +93,9 @@ export default function CourseDetailPage({
     );
   }
 
+  const hasPurchased = !!(user?.courseBuyed && 
+    (user.courseBuyed.includes(course?._id) || user.courseBuyed.includes(course?.slug)));
+
   return (
     <div className="bg-[#f4f7f6] min-h-screen pb-20 font-sans text-gray-800">
       <Header />
@@ -164,7 +167,7 @@ export default function CourseDetailPage({
                 </div>
 
                 {/* Nội dung bài viết từ Database */}
-                <article className="prose prose-blue max-w-none text-[15px] text-gray-700 leading-relaxed">
+                <article className="prose prose-blue max-w-none  text-gray-700 leading-relaxed">
                   <div
                     dangerouslySetInnerHTML={{ __html: course.description }}
                   />
@@ -237,63 +240,81 @@ export default function CourseDetailPage({
 
                   {openSections.includes(sIdx) && (
                     <div className="p-2 bg-white divide-y divide-gray-50">
-                      {section.lessons?.map((lesson: any, lIdx: number) => (
-                        <Link 
-                          href={{
-                            pathname: `/bai-hoc/${lesson.slug}`,
-                            query: { courseSlug: slug }
-                          }} 
-                          key={lIdx}
-                          onClick={(e) => {
-                            // Kiểm tra đăng nhập
-                            const isLoggedIn = !!user?.access_token || !!user?.username;
+                      {section.lessons?.map((lesson: any, lIdx: number) => {
+                        const hasPurchased = user?.courseBuyed && 
+                          (user.courseBuyed.includes(course?._id) || user.courseBuyed.includes(course?.slug));
+                        const showLockIcon = !lesson.isFree && !hasPurchased;
 
-                            if (!isLoggedIn) {
-                              if (!lesson.isFree) {
-                                e.preventDefault();
-                                setShowLoginModal(true); // Chưa đăng nhập -> Hiện modal yêu cầu đăng nhập
+                        return (
+                          <Link 
+                            href={{
+                              pathname: `/bai-hoc/${lesson.slug}`,
+                              query: { courseSlug: slug }
+                            }} 
+                            key={lIdx}
+                            onClick={(e) => {
+                              // Kiểm tra đăng nhập
+                              const isLoggedIn = !!user?.access_token || !!user?.username;
+
+                              if (!isLoggedIn) {
+                                if (!lesson.isFree) {
+                                  e.preventDefault();
+                                  setShowLoginModal(true); // Chưa đăng nhập -> Hiện modal yêu cầu đăng nhập
+                                }
+                                return; // Cho phép qua nếu bài học free
                               }
-                              return; // Cho phép qua nếu bài học free
-                            }
 
-                            // Nếu đã đăng nhập thì kiểm tra đã mua hay chưa
-                            const hasPurchased = user?.courseBuyed && 
-                              (user.courseBuyed.includes(course?._id) || user.courseBuyed.includes(course?.slug));
-                              
-                            // Nếu CHƯA MUA và bài học KHÔNG PHẢI FREE thì chặn
-                            if (!hasPurchased && !lesson.isFree) {
-                              e.preventDefault();
-                              setShowPaymentModal(true);
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md cursor-pointer transition-all">
-                            <div className="flex items-start gap-4">
-                              <div className="w-8 h-8 rounded-full bg-[#f15a24] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                {(lIdx + 1).toString().padStart(2, "0")}
+                              // Nếu CHƯA MUA và bài học KHÔNG PHẢI FREE thì chặn
+                              if (!hasPurchased && !lesson.isFree) {
+                                e.preventDefault();
+                                setShowPaymentModal(true);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md cursor-pointer transition-all">
+                              <div className="flex items-start gap-4">
+                                <div className="w-8 h-8 rounded-full bg-[#f15a24] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                  {(lIdx + 1).toString().padStart(2, "0")}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-800 text-[14px] hover:text-[#f15a24] transition-colors">
+                                    {lesson.title}
+                                    {lesson.isNew && (
+                                      <span className="ml-2 text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded italic uppercase">
+                                        Mới
+                                      </span>
+                                    )}
+                                  </h4>
+                                  <p className="text-[12px] text-gray-500 mt-1">
+                                    {lesson.subtitle}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-bold text-gray-800 text-[14px] hover:text-[#f15a24] transition-colors">
-                                  {lesson.title}
-                                  {lesson.isNew && (
-                                    <span className="ml-2 text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded italic uppercase">
-                                      Mới
-                                    </span>
-                                  )}
-                                </h4>
-                                <p className="text-[12px] text-gray-500 mt-1">
-                                  {lesson.subtitle}
-                                </p>
-                              </div>
+                              {lesson.isFree ? (
+                                <span className="text-[10px] font-bold text-[#f15a24] bg-orange-100 px-2 py-0.5 rounded animate-pulse">
+                                  FREE
+                                </span>
+                              ) : showLockIcon ? (
+                                <span className="text-gray-400 bg-gray-100 p-1.5 rounded-full" title="Bài học trả phí">
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                    />
+                                  </svg>
+                                </span>
+                              ) : null}
                             </div>
-                            {lesson.isFree && (
-                              <span className="text-[10px] font-bold text-[#f15a24] bg-orange-100 px-2 py-0.5 rounded">
-                                FREE
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      ))}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -361,15 +382,29 @@ export default function CourseDetailPage({
               </div>
 
               <div className="space-y-3">
-                <button 
-                  onClick={() => router.push(`/thanh-toan/${slug}`)}
-                  className="w-full bg-[#2e7d32] text-white font-bold py-2.5 rounded hover:bg-green-700 transition-colors text-sm"
-                >
-                  MUA NGAY
-                </button>
-                <button className="w-full bg-[#f15a24] text-white font-bold py-2.5 rounded hover:bg-[#d94e1d] transition-colors text-sm">
-                  Kích hoạt khoá học
-                </button>
+                {hasPurchased ? (
+                  <button 
+                    disabled
+                    className="w-full bg-[#1b5e20] text-white font-bold py-2.5 rounded text-sm flex items-center justify-center gap-2 cursor-default shadow-sm border border-green-700"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    ĐÃ THANH TOÁN
+                  </button>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => router.push(`/thanh-toan/${slug}`)}
+                      className="w-full bg-[#2e7d32] text-white font-bold py-2.5 rounded hover:bg-green-700 transition-colors text-sm"
+                    >
+                      MUA NGAY
+                    </button>
+                    <button className="w-full bg-[#f15a24] text-white font-bold py-2.5 rounded hover:bg-[#d94e1d] transition-colors text-sm">
+                      Kích hoạt khoá học
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 

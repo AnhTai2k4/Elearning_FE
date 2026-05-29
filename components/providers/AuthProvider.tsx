@@ -17,15 +17,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         const json = await res.json()
         console.log('Restore session response:', json.data)
         if (res.ok && json.data) {
-          dispatch(updateUser({
-            name: json.data.user.name || '', // nếu backend trả user info thì gán vào đây
-            username: json.data.user.name || '',
+          const userInfo = {
+            id: json.data.user._id || json.data.user.id || '',
+            name: json.data.user.name || '',
+            username: json.data.user.username || json.data.user.name || '',
             email: json.data.user.email || '',
             access_token: json.data.access_token,
             isAdmin: json.data.user.isAdmin || false,
             password: '',
-            phone: ''
-          }))
+            phone: json.data.user.phone || '',
+            courseBuyed: json.data.user.courseBuyed || []
+          }
+          dispatch(updateUser(userInfo));
+          localStorage.setItem('user_info', JSON.stringify(userInfo));
         } else {
           dispatch(updateUser({
             name: '',

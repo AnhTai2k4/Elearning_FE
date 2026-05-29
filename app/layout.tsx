@@ -9,8 +9,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Hệ thống ôn thi VSTEP - Trang chủ',
-  description: 'Nền tảng học và thi thử VSTEP hàng đầu',
+  title: 'ToánMath - Luyện Thi Toán Online',
+  description: 'Nền tảng luyện thi Toán THPT, Đại học hàng đầu Việt Nam. Học Toán cùng giáo viên giỏi, lộ trình bài bản.',
 };
 
 const GOOGLE_CLIENT_ID = "648771989226-jqag928fbnml6tamn44ca6u0lvd86oap.apps.googleusercontent.com"

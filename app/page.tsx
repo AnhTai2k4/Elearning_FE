@@ -1,12 +1,12 @@
 // app/page.tsx
-import Header from '../components/layout/Header.js'; // Giả sử em có Header
-import HeroBanner from '../components/home/HeroBanner.js';
-import CourseList from '../components/home/CourseList.js';
-import NewsSection from '../components/home/NewSection.js';
-import TeacherSlider from '../components/home/TeacherSlider.js';
-import FeedbackSlider from '../components/home/FeedbackSlider.js';
-import Footer from '../components/layout/Footer.js';
-import FeatureSection from '../components/home/FeatureSection.js';
+import Header from '../components/layout/Header';
+import HeroBanner from '../components/home/HeroBanner';
+import CourseList from '../components/home/CourseList';
+import NewsSection from '../components/home/NewSection';
+import TeacherSlider from '../components/home/TeacherSlider';
+import FeedbackSlider from '../components/home/FeedbackSlider';
+import Footer from '../components/layout/Footer';
+import FeatureSection from '../components/home/FeatureSection';
 
 export default function Home() {
   return (

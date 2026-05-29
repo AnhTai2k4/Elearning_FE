@@ -74,18 +74,19 @@ export default function LoginModal({
         // Đăng nhập thành công
         setMessage({ text: "Đăng nhập thành công!", type: "success" });
 
-        // 3. ĐẨY DỮ LIỆU LÊN REDUX
-        // Lưu ý: data trả về từ BE của em phải có chứa các trường này. Nếu cấu trúc JSON khác, em nhớ map lại cho đúng nhé.
-        dispatch(
-          updateUser({
-            name: userData.name || userData.user?.name,
-            username: userData.username || userData.user?.username,
-            email: userData.email || userData.user?.email,
-            access_token: data.access_token || data.token,
-            isAdmin: userData.isAdmin || userData.user?.isAdmin || false,
-            phone: userData.phone || userData.user?.phone || "",
-          }),
-        );
+        const userInfo = {
+          id: userData._id || userData.user?._id || userData.id || userData.user?.id || "",
+          name: userData.name || userData.user?.name || "",
+          username: userData.username || userData.user?.username || "",
+          email: userData.email || userData.user?.email || "",
+          access_token: data.access_token || data.token || "",
+          isAdmin: userData.isAdmin || userData.user?.isAdmin || false,
+          phone: userData.phone || userData.user?.phone || "",
+          courseBuyed: userData.courseBuyed || userData.user?.courseBuyed || [],
+        };
+
+        dispatch(updateUser(userInfo));
+        localStorage.setItem("user_info", JSON.stringify(userInfo));
 
         setTimeout(() => onClose(), 50);
       } else {

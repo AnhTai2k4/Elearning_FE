@@ -22,6 +22,7 @@ axiosClient.interceptors.request.use(
         // Nếu có Token, tự động gắn vào Header để chứng minh thân phận với Backend
         if (userInfo.access_token) {
           config.headers.Authorization = `Bearer ${userInfo.access_token}`;
+          config.headers.token = `Bearer ${userInfo.access_token}`;
         }
       } catch (error) {
         console.error('Lỗi khi đọc token:', error);

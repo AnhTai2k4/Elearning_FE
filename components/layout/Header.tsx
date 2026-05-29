@@ -73,40 +73,50 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-around p-4 bg-white shadow-md sticky top-0 z-50">
-      {/* GIỮ NGUYÊN BỘ LOGO VÀ NAV CỦA EM */}
-      <img
-        src="https://onthivstep.vn/images/icon/nn6b/logo.svg"
-        alt="logo"
-        className="w-30 h-16"
-      />
+      {/* LOGO ToánMath */}
+      <Link href="/" className="flex items-center gap-2">
+        <div className="text-3xl font-black">
+          <span className="text-[#fbbf24]">Toán</span>
+          <span className="text-[#1e3a8a]">Math</span>
+        </div>
+      </Link>
+
       <nav className="hidden md:flex gap-6 relative left-40">
-        <Link href="/" className="text-lg font-bold hover:text-orange-500">
+        <Link href="/" className="text-lg font-bold hover:text-yellow-500">
           Trang chủ
         </Link>
         <Link
           href="/khoa-hoc"
-          className="text-lg font-bold hover:text-orange-500"
+          className="text-lg font-bold hover:text-yellow-500"
         >
           Khóa học
         </Link>
         <Link
           href="/thi-thu"
-          className="text-lg font-bold hover:text-orange-500"
+          className="text-lg font-bold hover:text-yellow-500"
         >
           Thi thử
         </Link>
         <Link
           href="/so-tay"
-          className="text-lg font-bold hover:text-orange-500"
+          className="text-lg font-bold hover:text-yellow-500"
         >
           Sổ tay
         </Link>
         <Link
-          href="/tin-tuc"
-          className="text-lg font-bold hover:text-orange-500"
+          href="/tai-lieu"
+          className="text-lg font-bold hover:text-yellow-500"
         >
-          Tin tức
+          Tài liệu
         </Link>
+        {user.isAdmin && (
+          <Link
+            href="/giao-vien"
+            className="text-lg font-bold hover:text-yellow-500 text-blue-600"
+          >
+            Giáo viên
+          </Link>
+        )}
       </nav>
 
       {/* --- KHU VỰC TÀI KHOẢN --- */}
@@ -115,8 +125,8 @@ export default function Header() {
         {user.name ? (
           // Thêm ref={dropdownRef} vào đây để bắt sự kiện click ra ngoài
           <div className="flex items-center gap-5 relative" ref={dropdownRef}>
-            {/* Icon cái chuông thông báo màu cam */}
-            <button className="text-[#f15a24] hover:text-[#d94e1d] transition-colors relative">
+            {/* Icon cái chuông thông báo màu vàng */}
+            <button className="text-[#fbbf24] hover:text-[#f59e0b] transition-colors relative">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
               </svg>
@@ -134,8 +144,8 @@ export default function Header() {
             {/* --- POPUP DROPDOWN MENU MỚI THÊM --- */}
             {isDropdownOpen && (
               <div className="absolute top-[130%] right-0 w-[300px] bg-white shadow-2xl border border-gray-100 rounded-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                {/* Header Popup Gradient Xanh */}
-                <div className="bg-gradient-to-r from-[#5D75D4] to-[#4CB5C8] p-5 flex items-center gap-4">
+                {/* Header Popup Gradient Navy Blue */}
+                <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] p-5 flex items-center gap-4">
                   <div className="w-14 h-14 shrink-0 rounded-full border border-white/50 text-white flex items-center justify-center text-3xl font-normal bg-white/20">
                     {getInitial(user.name)}
                   </div>
@@ -151,6 +161,15 @@ export default function Header() {
 
                 {/* Danh sách Menu */}
                 <div className="flex flex-col text-[#002b49] font-bold text-sm">
+                  {user.isAdmin && (
+                    <Link
+                      href="/giao-vien"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-blue-600 font-extrabold"
+                    >
+                      QUẢN TRỊ / GIÁO VIÊN
+                    </Link>
+                  )}
                   <Link
                     href="/lich-su-giao-dich"
                     onClick={() => setIsDropdownOpen(false)}
@@ -180,13 +199,13 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsRegisterOpen(true)}
-              className="text-gray-700 font-semibold hover:text-[#0072BC] transition-colors"
+              className="text-gray-700 font-semibold hover:text-[#1e3a8a] transition-colors"
             >
               Đăng ký
             </button>
             <button
               onClick={() => setIsLoginOpen(true)}
-              className="bg-[#f15a24] text-white px-5 py-2 rounded-full font-bold hover:bg-[#d94e1d] transition-colors"
+              className="bg-[#fbbf24] text-[#1e3a8a] px-5 py-2 rounded-full font-bold hover:bg-[#f59e0b] hover:text-white transition-colors"
             >
               Đăng nhập
             </button>

@@ -29,25 +29,21 @@ export default function FeatureSection() {
             >
               {/* Slide 1 */}
               <SwiperSlide>
-                <div className="relative w-full h-full">
-                  <img 
-                    src="https://onthivstep.vn/_next/image?url=%2Fimages%2Ficon%2Fnn6b%2Fmacpic2.png&w=1080&q=100" 
-                    alt="Kết quả chấm bài 1" 
-                     
-                    className="object-cover object-top" 
-                  />
+                <div className="relative w-full h-full bg-gradient-to-br from-blue-50 to-yellow-50 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">📊</div>
+                    <p className="text-sm font-bold text-[#1e3a8a]">Chấm bài chi tiết từng bước giải</p>
+                  </div>
                 </div>
               </SwiperSlide>
 
               {/* Slide 2 */}
               <SwiperSlide>
-                <div className="relative w-full h-full">
-                  <img 
-                    src="https://onthivstep.vn/_next/image?url=%2Fimages%2Ficon%2Fnn6b%2Fmacpic2.png&w=1080&q=100" 
-                    alt="Kết quả chấm bài 2" 
-                    
-                    className="object-cover object-top" 
-                  />
+                <div className="relative w-full h-full bg-gradient-to-br from-yellow-50 to-blue-50 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">✅</div>
+                    <p className="text-sm font-bold text-[#1e3a8a]">Phân tích lỗi sai & hướng dẫn sửa</p>
+                  </div>
                 </div>
               </SwiperSlide>
               
@@ -66,21 +62,21 @@ export default function FeatureSection() {
 
         <div className="flex flex-col gap-6">
           <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#f15a24] mb-2">
-              Chấm Chữa Bài Từ Giảng Viên
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#fbbf24] mb-2">
+              Chấm Chữa Bài Từ Giáo Viên
             </h2>
-            <h3 className="text-4xl md:text-5xl font-extrabold text-[#004a80]">
+            <h3 className="text-4xl md:text-5xl font-extrabold text-[#1e3a8a]">
               Giàu Kinh Nghiệm
             </h3>
           </div>
           <p className="text-base text-gray-700 leading-relaxed text-justify">
-            Với kinh nghiệm giảng dạy, vận hành, làm giám thị cho các kỳ thi chứng chỉ 
-            quốc tế và đã tham gia tập huấn giám khảo, biên soạn đề thi VSTEP, thầy 
-            hiểu rõ cấu trúc đề thi và soạn ra những bộ đề sát với đề thi thật nhất. Giúp 
-            các em luyện tập và chấm chữa chi tiết cho 4 kỹ năng của đề thi.
+            Với đội ngũ giáo viên Toán giàu kinh nghiệm từ các trường chuyên, 
+            trường đại học hàng đầu, thầy cô sẽ chấm và chữa bài chi tiết từng bước giải, 
+            phân tích lỗi sai thường gặp và hướng dẫn phương pháp tư duy đúng. 
+            Giúp các em không chỉ biết cách giải mà còn hiểu sâu bản chất Toán học.
           </p>
           <div>
-            <button className="inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[#f15a24] text-[#f15a24] font-semibold hover:bg-[#f15a24] hover:text-white transition-all duration-300 group">
+            <button className="inline-flex items-center gap-2 px-8 py-3 rounded-full border-2 border-[#fbbf24] text-[#fbbf24] font-semibold hover:bg-[#fbbf24] hover:text-white transition-all duration-300 group">
               Thi thử ngay
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
