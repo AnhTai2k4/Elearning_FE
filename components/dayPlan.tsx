@@ -32,7 +32,7 @@ export default function DayPlan({
   onSavePlan,
   initialPlan,
 }: DayPlanProps) {
-  const [activeTab, setActiveTab] = useState<'draft' | 'ai' | 'mentor'>('draft');
+  const [activeTab, setActiveTab] = useState<'draft' | 'mentor'>('draft');
   const [rows, setRows] = useState<DayPlanRow[]>([]);
   const [reflection, setReflection] = useState('');
   const [status, setStatus] = useState<'draft' | 'submitted' | 'reviewed'>('draft');
@@ -102,16 +102,7 @@ export default function DayPlan({
         >
           Đang lập (Kế hoạch)
         </button>
-        <button
-          onClick={() => setActiveTab('ai')}
-          className={`px-6 py-2 rounded-full text-[13px] font-bold transition-all ${
-            activeTab === 'ai'
-              ? 'bg-white text-[#0072BC] shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          AI đánh giá
-        </button>
+        
         <button
           onClick={() => setActiveTab('mentor')}
           className={`px-6 py-2 rounded-full text-[13px] font-bold transition-all ${
@@ -293,37 +284,6 @@ export default function DayPlan({
         </div>
       )}
 
-      {/* AI Evaluation Tab */}
-      {activeTab === 'ai' && (
-        <div className="max-w-3xl">
-          {initialPlan?.aiFeedback ? (
-            <div className="bg-white border border-indigo-100 rounded-2xl p-6 shadow-sm ring-1 ring-indigo-50/50">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-2xl shrink-0">
-                  🤖
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">Đánh giá ngày {dateLabel}</h3>
-                  {initialPlan.aiScore !== undefined && (
-                    <div className="flex items-center gap-1 mt-1 text-sm text-gray-600">
-                      Điểm kỷ luật: <span className="font-black text-indigo-600 text-lg ml-1">{initialPlan.aiScore}</span>/10
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-indigo-50/50 p-5 rounded-xl text-[14px] text-gray-700 leading-relaxed italic border-l-4 border-indigo-500">
-                "{initialPlan.aiFeedback}"
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center shadow-sm">
-              <div className="text-4xl mb-4">🤖</div>
-              <p className="text-gray-500 font-bold text-[14px]">AI chưa đánh giá.</p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Mentor feedback Tab */}
       {activeTab === 'mentor' && (

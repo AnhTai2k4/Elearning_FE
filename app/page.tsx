@@ -6,7 +6,8 @@ import NewsSection from '../components/home/NewSection';
 import TeacherSlider from '../components/home/TeacherSlider';
 import FeedbackSlider from '../components/home/FeedbackSlider';
 import Footer from '../components/layout/Footer';
-import FeatureSection from '../components/home/FeatureSection';
+import BenefitsSection from '../components/home/BenefitsSection';
+
 
 export default function Home() {
   return (
@@ -16,8 +17,8 @@ export default function Home() {
       {/* Ốp cái Hero Banner vào đây */}
       <HeroBanner />
       <CourseList />
-      <FeatureSection />
       <TeacherSlider />
+      <BenefitsSection/>
       <FeedbackSlider />
       <NewsSection />
       <Footer />
