@@ -8,17 +8,20 @@ import { CourseService, CourseData } from '@/services/CourseService';
 import TeacherReviews from '@/components/teacher/TeacherReviews';
 import TeacherCourses from '@/components/teacher/TeacherCourses';
 import TeacherAnalytics from '@/components/teacher/TeacherAnalytics';
+import TeacherExams from '@/components/teacher/TeacherExams';
+import { ExamService, ExamData } from '@/services/ExamService';
 
 export default function TeacherPage() {
   const user = useSelector((state: any) => state.user);
 
   // Tab controls
-  const [activeTab, setActiveTab] = useState<'reviews' | 'courses' | 'analytics'>('reviews');
+  const [activeTab, setActiveTab] = useState<'reviews' | 'courses' | 'exams' | 'analytics'>('reviews');
   const [loading, setLoading] = useState<boolean>(true);
 
   // Data storage
   const [plans, setPlans] = useState<any[]>([]);
   const [courses, setCourses] = useState<CourseData[]>([]);
+  const [exams, setExams] = useState<ExamData[]>([]);
   const [reviewFilter, setReviewFilter] = useState<'submitted' | 'reviewed'>('submitted');
 
   const fetchData = async () => {
@@ -35,6 +38,12 @@ export default function TeacherPage() {
       const coursesData = await CourseService.getAllCourses();
       if (Array.isArray(coursesData)) {
         setCourses(coursesData);
+      }
+
+      // Fetch exams list
+      const examsRes = await ExamService.getAllExams();
+      if (examsRes.status === 'OK' && Array.isArray(examsRes.data)) {
+        setExams(examsRes.data);
       }
     } catch (err) {
       console.error('Error fetching teacher data:', err);
@@ -93,6 +102,12 @@ export default function TeacherPage() {
               Quản lý khóa học
             </button>
             <button
+              onClick={() => setActiveTab('exams')}
+              className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${activeTab === 'exams' ? 'bg-[#fbbf24] text-[#1e3a8a]' : 'hover:bg-white/10 text-white'}`}
+            >
+              Quản lý Đề thi
+            </button>
+            <button
               onClick={() => setActiveTab('analytics')}
               className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${activeTab === 'analytics' ? 'bg-[#fbbf24] text-[#1e3a8a]' : 'hover:bg-white/10 text-white'}`}
             >
@@ -116,6 +131,13 @@ export default function TeacherPage() {
         {activeTab === 'courses' && (
           <TeacherCourses
             courses={courses}
+            onRefresh={fetchData}
+          />
+        )}
+
+        {activeTab === 'exams' && (
+          <TeacherExams
+            exams={exams}
             onRefresh={fetchData}
           />
         )}

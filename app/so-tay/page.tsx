@@ -171,7 +171,7 @@ export default function NotebookPage() {
         }));
         setMarkedDays(prev => ({
           ...prev,
-          [selectedDay]: (plan.status === 'submitted' || plan.status === 'reviewed')
+          [selectedDay]: ((plan.status as string) === 'submitted' || (plan.status as string) === 'reviewed')
             ? 'completed'
             : 'planned'
         }));

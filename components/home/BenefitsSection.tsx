@@ -1,4 +1,4 @@
-import { ScrollReveal } from "./ScrollReveal.tsx";
+import { ScrollReveal } from "./ScrollReveal";
 import backgroundImage from "figma:asset/9f15f8306d80b093260628ceb1f8fb76e40aec8d.png";
 import React from "react";
 
