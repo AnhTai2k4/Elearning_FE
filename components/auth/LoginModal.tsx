@@ -81,6 +81,7 @@ export default function LoginModal({
           email: userData.email || userData.user?.email || "",
           access_token: data.access_token || data.token || "",
           isAdmin: userData.isAdmin || userData.user?.isAdmin || false,
+          isTeacher: userData.isTeacher || userData.user?.isTeacher || false,
           phone: userData.phone || userData.user?.phone || "",
           courseBuyed: userData.courseBuyed || userData.user?.courseBuyed || [],
         };
@@ -138,6 +139,7 @@ export default function LoginModal({
             email: data.email || data.user?.email,
             access_token: data.access_token || data.token,
             isAdmin: data.isAdmin || data.user?.isAdmin || false,
+            isTeacher: data.isTeacher || data.user?.isTeacher || false,
             phone: data.phone || data.user?.phone || "",
           };
 

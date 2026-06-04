@@ -9,6 +9,7 @@ export interface ExamData {
   questionsCount: number;
   answers: Record<string, string>; // e.g. { "1": "A", "13_a": "Đúng", "17": "12" }
   type: 'exam' | 'homework';
+  grade?: 10 | 11 | 12;
   createdBy: string;
 }
 
@@ -63,6 +64,11 @@ export const ExamService = {
 
   getSubmissions: async (examId: string) => {
     const response = await axiosClient.get(`/exam/submissions/${examId}`);
+    return response.data;
+  },
+
+  getStudentSubmissions: async (studentId: string) => {
+    const response = await axiosClient.get(`/exam/student-submissions/${studentId}`);
     return response.data;
   },
 

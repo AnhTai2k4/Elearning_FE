@@ -11,7 +11,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-5 flex flex-col gap-6">
             <div className="relative w-[150px] h-[60px]">
               <div className="text-4xl font-black text-white italic">
-                <span className="text-[#fbbf24]">Toán</span>Math
+                <span className="text-[#fbbf24]">MT</span>Math
               </div> 
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-md">
@@ -31,8 +31,8 @@ export default function Footer() {
                 <svg className="w-6 h-6 text-[#fbbf24] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <a href="mailto:contact@toanmath.edu.vn" className="hover:text-[#fbbf24] transition-colors leading-relaxed">
-                  contact@toanmath.edu.vn
+                <a href="mailto:contact@mtmath.edu.vn" className="hover:text-[#fbbf24] transition-colors leading-relaxed">
+                  contact@mtmath.edu.vn
                 </a>
               </li>
               <li className="flex items-start gap-3">
@@ -77,8 +77,8 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-700/50 pt-6 text-center text-sm text-gray-400">
-          <p className="mb-1 uppercase font-semibold text-gray-300">ToánMath - Nền tảng luyện thi Toán Online</p>
-          <p>© {new Date().getFullYear()} ToánMath. Mọi quyền được bảo lưu.</p>
+          <p className="mb-1 uppercase font-semibold text-gray-300">MTMath - Nền tảng luyện thi Toán Online</p>
+          <p>© {new Date().getFullYear()} MTMath. Mọi quyền được bảo lưu.</p>
         </div>
 
       </div>

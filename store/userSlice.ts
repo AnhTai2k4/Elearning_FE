@@ -7,6 +7,7 @@ const initialState = {
   email:'',
   access_token: '',
   isAdmin: false,
+  isTeacher: false,
   password: '',
   phone: '',
   courseBuyed: [] as string[],
@@ -21,7 +22,7 @@ export const userSlice = createSlice({
         // state.username = action.payload.username
         // state.access_token = action.payload.access_token
 
-        const {id, name, username, email, access_token, isAdmin, password, phone, courseBuyed} = action.payload
+        const {id, name, username, email, access_token, isAdmin, isTeacher, password, phone, courseBuyed} = action.payload
 
         state.id = id || ''
         state.name = name 
@@ -29,6 +30,7 @@ export const userSlice = createSlice({
         state.email = email
         state.access_token = access_token
         state.isAdmin = isAdmin
+        state.isTeacher = isTeacher
         state.password = password
         state.phone = phone
         state.courseBuyed = courseBuyed || []

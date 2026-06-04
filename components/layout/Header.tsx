@@ -73,10 +73,10 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-around p-4 bg-white shadow-md sticky top-0 z-50">
-      {/* LOGO ToánMath */}
+      {/* LOGO MTMath */}
       <Link href="/" className="flex items-center gap-2">
         <div className="text-3xl font-black">
-          <span className="text-[#fbbf24]">Toán</span>
+          <span className="text-[#fbbf24]">MT</span>
           <span className="text-[#1e3a8a]">Math</span>
         </div>
       </Link>
@@ -109,12 +109,20 @@ export default function Header() {
         >
           Tài liệu
         </Link>
-        {user.isAdmin && (
+        {(user.isTeacher || user.isAdmin) && (
           <Link
             href="/giao-vien"
             className="text-lg font-bold hover:text-yellow-500 text-blue-600"
           >
             Giáo viên
+          </Link>
+        )}
+        {user.isAdmin && (
+          <Link
+            href="/quan-tri"
+            className="text-lg font-bold hover:text-yellow-500 text-purple-600"
+          >
+            Quản trị
           </Link>
         )}
       </nav>
@@ -161,13 +169,22 @@ export default function Header() {
 
                 {/* Danh sách Menu */}
                 <div className="flex flex-col text-[#002b49] font-bold text-sm">
-                  {user.isAdmin && (
+                  {(user.isTeacher || user.isAdmin) && (
                     <Link
                       href="/giao-vien"
                       onClick={() => setIsDropdownOpen(false)}
                       className="px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-blue-600 font-extrabold"
                     >
-                      QUẢN TRỊ / GIÁO VIÊN
+                      GIÁO VIÊN
+                    </Link>
+                  )}
+                  {user.isAdmin && (
+                    <Link
+                      href="/quan-tri"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-purple-600 font-extrabold"
+                    >
+                      QUẢN TRỊ
                     </Link>
                   )}
                   <Link

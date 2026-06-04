@@ -24,6 +24,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             email: json.data.user.email || '',
             access_token: json.data.access_token,
             isAdmin: json.data.user.isAdmin || false,
+            isTeacher: json.data.user.isTeacher || false,
             password: '',
             phone: json.data.user.phone || '',
             courseBuyed: json.data.user.courseBuyed || []
@@ -37,6 +38,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             email: '',
             access_token: '',
             isAdmin: false,
+            isTeacher: false,
             password: '',
             phone: ''
           }))
@@ -48,6 +50,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           email: '',
           access_token: '',
           isAdmin: false,
+          isTeacher: false,
           password: '',
           phone: ''
         }))

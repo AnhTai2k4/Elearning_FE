@@ -19,7 +19,7 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
 
   // Form states
   const [examForm, setExamForm] = useState<ExamData>({
-    title: '', description: '', fileUrl: '', duration: 90, questionsCount: 22, answers: {}, type: 'exam', createdBy: ''
+    title: '', description: '', fileUrl: '', duration: 90, questionsCount: 22, answers: {}, type: 'exam', grade: 12, createdBy: ''
   });
   const [isThptFormat, setIsThptFormat] = useState(true);
 
@@ -113,7 +113,7 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
           <h2 className="font-bold text-[#1e3a8a] text-lg">Đề thi & Bài tập</h2>
           <button
             onClick={() => {
-              setExamForm({ title: '', description: '', fileUrl: '', duration: 90, questionsCount: 22, answers: {}, type: 'exam', createdBy: '' });
+              setExamForm({ title: '', description: '', fileUrl: '', duration: 90, questionsCount: 22, answers: {}, type: 'exam', grade: 12, createdBy: '' });
               handleToggleThptFormat(true);
               setIsExamModalOpen(true);
             }}
@@ -137,8 +137,8 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
                   <div className="text-gray-900 truncate font-semibold">{ex.title}</div>
                   <div className="text-xs text-gray-400 mt-1 flex gap-2">
                     <span>{ex.type === 'exam' ? 'Đề thi' : 'Bài tập'}</span>
+                    <span>• Lớp {ex.grade || 12}</span>
                     <span>• {ex.duration} phút</span>
-                    <span>• {ex.questionsCount} câu</span>
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -160,6 +160,7 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
               <p className="text-gray-500 text-xs mt-1">{selectedExam.description || 'Không có mô tả.'}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold">Dạng bài: {selectedExam.type === 'exam' ? 'Đề thi' : 'Bài tập'}</span>
+                <span className="bg-purple-50 text-purple-700 text-xs px-2.5 py-1 rounded-full font-bold">Khối lớp: Lớp {selectedExam.grade || 12}</span>
                 <span className="bg-amber-50 text-amber-700 text-xs px-2.5 py-1 rounded-full font-bold">Thời gian: {selectedExam.duration} phút</span>
                 {selectedExam.fileUrl && (
                   <a href={selectedExam.fileUrl} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold hover:underline flex items-center gap-1">
@@ -259,7 +260,7 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
             <button onClick={() => setIsExamModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg">✕</button>
             <h3 className="font-extrabold text-[#1e3a8a] text-lg mb-4">{examForm._id ? 'Chỉnh sửa đề thi' : 'Thêm đề thi mới'}</h3>
             <form onSubmit={handleSaveExam} className="flex flex-col gap-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block font-bold text-gray-500 mb-1">Tiêu đề đề thi</label>
                   <input type="text" value={examForm.title} onChange={(e) => setExamForm({ ...examForm, title: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 focus:outline-none" required />
@@ -269,6 +270,14 @@ export default function TeacherExams({ exams, onRefresh }: TeacherExamsProps) {
                   <select value={examForm.type} onChange={(e: any) => setExamForm({ ...examForm, type: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 focus:outline-none">
                     <option value="exam">Đề thi (Exam)</option>
                     <option value="homework">Bài tập về nhà (Homework)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-500 mb-1">Khối Lớp</label>
+                  <select value={examForm.grade || 12} onChange={(e: any) => setExamForm({ ...examForm, grade: Number(e.target.value) as any })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 px-3 focus:outline-none">
+                    <option value={10}>Lớp 10</option>
+                    <option value={11}>Lớp 11</option>
+                    <option value={12}>Lớp 12</option>
                   </select>
                 </div>
               </div>
