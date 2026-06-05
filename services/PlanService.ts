@@ -55,4 +55,14 @@ export const PlanService = {
     const response = await axiosClient.put(`/plan/daily/review`, data);
     return response.data;
   },
+
+  generateAIComment: async (data: {
+    tasks: any[];
+    reflection: string;
+    selfScore: number;
+    date: string | Date;
+  }) => {
+    const response = await axiosClient.post(`/plan/daily/ai-comment`, data);
+    return response.data;
+  },
 };

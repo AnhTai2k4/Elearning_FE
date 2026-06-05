@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
+import LoginModal from '@/components/auth/LoginModal';
 
 export default function LessonDetailPage({ 
   params,
@@ -14,6 +17,8 @@ export default function LessonDetailPage({
   // Bóc tách Promise trong Next.js 15
   const resolvedParams = React.use(params);
   const slug = resolvedParams.slug; 
+  const user = useSelector((state: any) => state.user);
+  const router = useRouter();
 
   const resolvedSearchParams = React.use(searchParams);
   const courseSlugQuery = resolvedSearchParams.courseSlug;
@@ -21,8 +26,12 @@ export default function LessonDetailPage({
   const [activeTab, setActiveTab] = useState('thaoluan');
   const [isClient, setIsClient] = useState(false);
 
-  // Thêm state cho lesson data từ API
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   const [lesson, setLesson] = useState<any>(null);
+  const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,14 +39,15 @@ export default function LessonDetailPage({
     setIsClient(true);
   }, []);
 
-  // Gọi API để lấy lesson data
+  // Gọi API để lấy lesson data và thông tin khóa học
   useEffect(() => {
     const fetchLesson = async () => {
       try {
         setLoading(true);
-        // Lấy courseSlug từ searchParams (được truyền qua link ở trang khóa học)
-        const courseSlug = courseSlugQuery ; // Giá trị fallback nếu không có courseSlug truyền vào
-        const response = await fetch(`http://localhost:3001/api/course/get-lesson/${courseSlug}/${slug}`);
+        const courseSlug = courseSlugQuery ? decodeURIComponent(courseSlugQuery) : '';
+        const decodedSlug = decodeURIComponent(slug);
+        
+        const response = await fetch(`http://localhost:3001/api/course/get-lesson/${encodeURIComponent(courseSlug)}/${encodeURIComponent(decodedSlug)}`);
         
         if (!response.ok) {
           throw new Error('Không tìm thấy bài học');
@@ -45,6 +55,12 @@ export default function LessonDetailPage({
         
         const data = await response.json();
         setLesson(data);
+
+        const courseResponse = await fetch(`http://localhost:3001/api/course/get-course/${encodeURIComponent(courseSlug)}`);
+        if (courseResponse.ok) {
+          const courseData = await courseResponse.json();
+          setCourse(courseData);
+        }
       } catch (err: any) {
         setError(err.message);
         console.error('Lỗi khi tải bài học:', err);
@@ -58,12 +74,27 @@ export default function LessonDetailPage({
     }
   }, [isClient, slug, courseSlugQuery]);
 
-  // MOCK DATA giả lập playlist (có thể lấy từ API sau)
-  const mockPlaylist = [
-    { id: 1, title: "1. Cấu trúc thư và Các bước viết thư", isPlaying: true },
-    { id: 2, title: "2. Thư cung cấp thông tin", isPlaying: false },
-    { id: 3, title: "3. Thư đưa lời khuyên & gợi ý", isPlaying: false },
-  ];
+  // Lấy danh sách toàn bộ bài học trong khóa học
+  const allLessons: any[] = [];
+  if (course && course.sections) {
+    course.sections.forEach((sec: any) => {
+      if (sec.lessons) {
+        sec.lessons.forEach((les: any) => {
+          allLessons.push(les);
+        });
+      }
+    });
+  }
+
+  // Tìm index bài học hiện tại và lấy 3 bài học tiếp theo (so sánh sau khi giải mã URL)
+  const decodedSlug = decodeURIComponent(slug);
+  const currentIdx = allLessons.findIndex((les) => {
+    return decodeURIComponent(les.slug).trim() === decodedSlug.trim();
+  });
+  const nextLessons = currentIdx !== -1 ? allLessons.slice(currentIdx + 1, currentIdx + 4) : [];
+
+  const hasPurchased = !!(user?.courseBuyed && 
+    (user.courseBuyed.includes(course?._id) || user.courseBuyed.includes(course?.slug)));
 
   if (!isClient) return null;
 
@@ -187,21 +218,139 @@ export default function LessonDetailPage({
 
             {/* Danh sách Playlist */}
             <div className="overflow-y-auto flex-grow p-2 space-y-1 mt-2">
-              {mockPlaylist.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`flex items-center gap-3 p-3 rounded cursor-pointer transition-colors ${item.isPlaying ? 'bg-orange-50/50 border-l-2 border-[#f15a24]' : 'hover:bg-gray-50'}`}
-                >
-                  <svg className={`w-4 h-4 shrink-0 ${item.isPlaying ? 'text-[#f15a24]' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
-                  <span className={`text-[13px] font-medium ${item.isPlaying ? 'text-[#f15a24]' : 'text-gray-700'}`}>{item.title}</span>
+              {/* Bài học hiện tại */}
+              {lesson && (
+                <div className="flex items-center gap-3 p-3 rounded bg-orange-50/50 border-l-2 border-[#f15a24]">
+                  <svg className="w-4 h-4 shrink-0 text-[#f15a24]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex flex-col">
+                    <span className="text-[13px] font-bold text-[#f15a24] line-clamp-1">{lesson.title}</span>
+                    <span className="text-[10px] text-orange-600 font-medium">Đang học</span>
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Đường chia bài tiếp theo */}
+              <div className="pt-3 pb-1 px-3 border-t border-gray-100 mt-2">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Bài học tiếp theo</span>
+              </div>
+
+              {/* Các bài tiếp theo */}
+              {nextLessons.length === 0 ? (
+                <p className="text-[12px] text-gray-400 px-3 py-2 italic">Không có bài học tiếp theo.</p>
+              ) : (
+                nextLessons.map((item: any) => {
+                  const isLocked = !item.isFree && !hasPurchased;
+                  return (
+                    <Link
+                      key={item.slug}
+                      href={{
+                        pathname: `/bai-hoc/${item.slug}`,
+                        query: { courseSlug: courseSlugQuery }
+                      }}
+                      onClick={(e) => {
+                        if (isLocked) {
+                          e.preventDefault();
+                          if (!user || !user.access_token) {
+                            setShowLoginModal(true);
+                          } else {
+                            setShowPaymentModal(true);
+                          }
+                        }
+                      }}
+                      className="flex items-center justify-between p-3 rounded hover:bg-gray-50 transition-colors text-left w-full block"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isLocked ? (
+                          <svg className="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        <div className="flex flex-col">
+                          <span className={`text-[13px] font-semibold line-clamp-1 ${isLocked ? 'text-gray-400' : 'text-gray-750'}`}>{item.title}</span>
+                          {item.duration && <span className="text-[11px] text-gray-400 mt-0.5">Thời lượng: {item.duration}</span>}
+                        </div>
+                      </div>
+                      {item.isFree && (
+                        <span className="text-[10px] font-bold text-[#f15a24] bg-orange-100 px-2 py-0.5 rounded shrink-0">
+                          FREE
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })
+              )}
             </div>
 
           </div>
         </div>
 
       </div>
+
+      {/* Modal thông báo yêu cầu mua khóa học */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
+            <p className="text-gray-600 mb-6">Bạn cần phải mua khóa học để xem tiếp video bài học này nhé.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setShowPaymentModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium transition-colors"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  router.push(`/thanh-toan/${courseSlugQuery}`);
+                }}
+                className="px-4 py-2 bg-[#f15a24] text-white rounded hover:bg-[#d94e1d] font-medium transition-colors"
+              >
+                Mua ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal thông báo yêu cầu ĐĂNG NHẬP */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
+            <p className="text-gray-600 mb-6">Bạn cần đăng nhập để học tiếp bài học này nhé.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setShowLoginModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium transition-colors"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setIsLoginModalOpen(true);
+                }}
+                className="px-4 py-2 bg-[#f15a24] text-white rounded hover:bg-[#d94e1d] font-medium transition-colors"
+              >
+                Đăng nhập
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
+
     </div>
   );
 }

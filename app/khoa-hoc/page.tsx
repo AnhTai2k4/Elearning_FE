@@ -5,7 +5,7 @@ export default function CoursesPage() {
     <main className="min-h-screen bg-gray-50 ">
       <Header />
 
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Tái sử dụng lại component CourseList em đã tạo */}
         <CourseList />
       </div>

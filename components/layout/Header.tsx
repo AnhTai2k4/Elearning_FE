@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react"; // Thêm useRef và useEffect
 import RegisterModal from "../auth/RegisterModal";
 import LoginModal from "../auth/LoginModal";
@@ -72,12 +73,25 @@ export default function Header() {
   // ------------------------------------
 
   return (
-    <header className="flex items-center justify-around p-4 bg-white shadow-md sticky top-0 z-50">
+    <header className="flex items-center justify-around p-4 bg-white shadow-md sticky top-0 z-50 border-b-4 border-[#fbbf24]">
       {/* LOGO MTMath */}
-      <Link href="/" className="flex items-center gap-2">
-        <div className="text-3xl font-black">
-          <span className="text-[#fbbf24]">MT</span>
-          <span className="text-[#1e3a8a]">Math</span>
+      <Link href="/" className="flex items-center gap-3 select-none">
+        <div className="relative w-10 h-10 shrink-0">
+          <Image 
+            src="/images/math_assets/logo.png" 
+            alt="MTMath Logo" 
+            fill 
+            className="object-contain" 
+            priority 
+          />
+        </div>
+        <div className="flex flex-col justify-center leading-none">
+          <span className="text-2xl font-bold text-[#1a367c] tracking-tight">
+            MTMath
+          </span>
+          <span className="text-[11px] font-bold text-[#fbbf24] tracking-wide mt-1 uppercase">
+            LUYỆN THI TOÁN THCS - THPT
+          </span>
         </div>
       </Link>
 

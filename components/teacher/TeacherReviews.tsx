@@ -21,6 +21,7 @@ export default function TeacherReviews({
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [teacherScore, setTeacherScore] = useState<number>(10);
   const [teacherComment, setTeacherComment] = useState<string>('');
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,33 +45,26 @@ export default function TeacherReviews({
     }
   };
 
-  const handleAICopilot = () => {
+  const handleAICopilot = async () => {
     if (!selectedPlan) return;
-    const taskCount = selectedPlan.tasks?.length || 0;
-    const totalActualTime = selectedPlan.tasks?.reduce((sum: number, t: any) => sum + (Number(t.actualTime) || 0), 0) || 0;
-    const totalPlannedTime = selectedPlan.tasks?.reduce((sum: number, t: any) => sum + (Number(t.time) || 0), 0) || 0;
-    const studentScore = selectedPlan.selfScore || 10;
-    const reflection = selectedPlan.reflection || '';
-
-    let aiComment = `Nhận xét kế hoạch ngày ${new Date(selectedPlan.date).toLocaleDateString('vi-VN')}:\n`;
-    aiComment += `- Học sinh hoàn thành ${taskCount} công việc chính.\n`;
-    aiComment += `- Học tập thực tế: ${totalActualTime} giờ (dự kiến: ${totalPlannedTime} giờ).\n`;
-    
-    if (totalActualTime >= totalPlannedTime) {
-      aiComment += `- Hoàn thành rất tốt mục tiêu thời gian đã tự đề xuất. `;
-    } else {
-      aiComment += `- Thời gian học thực tế còn ít hơn dự kiến, em cần chú ý quản lý thời gian tập trung hơn. `;
+    try {
+      setIsAiLoading(true);
+      const res = await PlanService.generateAIComment({
+        tasks: selectedPlan.tasks || [],
+        reflection: selectedPlan.reflection || '',
+        selfScore: selectedPlan.selfScore || 10,
+        date: selectedPlan.date
+      });
+      if (res.status === 'OK') {
+        setTeacherComment(res.data);
+        setTeacherScore(selectedPlan.selfScore || 10);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Lỗi khi gọi AI Co-pilot.');
+    } finally {
+      setIsAiLoading(false);
     }
-
-    if (studentScore >= 8) {
-      aiComment += `Tinh thần tự giác cao (${studentScore}/10). `;
-    }
-    if (reflection) {
-      aiComment += `Rút kinh nghiệm tốt: "${reflection}".`;
-    }
-    
-    setTeacherComment(aiComment);
-    setTeacherScore(studentScore);
   };
 
   return (
@@ -212,9 +206,10 @@ export default function TeacherReviews({
                 <button
                   type="button"
                   onClick={handleAICopilot}
-                  className="bg-[#1e3a8a] text-white hover:bg-[#3b82f6] text-[10px] font-bold px-2.5 py-1 rounded transition-colors"
+                  disabled={isAiLoading}
+                  className="bg-[#1e3a8a] text-white hover:bg-[#3b82f6] disabled:bg-gray-400 text-[10px] font-bold px-2.5 py-1 rounded transition-colors"
                 >
-                  Dùng nhận xét AI
+                  {isAiLoading ? 'Đang phân tích...' : 'Dùng nhận xét AI'}
                 </button>
               </div>
             )}

@@ -286,7 +286,27 @@ export default function ExamRoomPage() {
 
             <div className="flex gap-4 justify-center">
               <button onClick={() => router.push('/thi-thu')} className="bg-[#1e3a8a] text-white font-bold py-2.5 px-5 rounded-full hover:bg-amber-500">Quay lại danh sách</button>
-              <button onClick={() => { setPhase('inProgress'); setAnswers({}); setCountdown(selectedExam.duration * 60); }} className="border font-bold py-2.5 px-5 rounded-full hover:bg-gray-50 text-gray-700">Làm lại</button>
+              <button
+                onClick={async () => {
+                  try {
+                    const studentId = user.id || user._id || '65c2b8c56c2d1b827e8a93ef';
+                    const res = await ExamService.startAttempt({ examId: selectedExam._id!, studentId });
+                    if (res.status === 'OK') {
+                      setAnswers({});
+                      setCountdown(selectedExam.duration * 60);
+                      setPhase('inProgress');
+                    } else {
+                      alert('Không thể bắt đầu lượt thi mới.');
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert('Lỗi kết nối máy chủ.');
+                  }
+                }}
+                className="border font-bold py-2.5 px-5 rounded-full hover:bg-gray-50 text-gray-700"
+              >
+                Làm lại
+              </button>
             </div>
           </div>
         </div>

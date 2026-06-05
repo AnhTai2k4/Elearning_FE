@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { setCourses } from '../../store/courseSlice';
 import Link from 'next/link';
+import { CourseService } from '@/services/CourseService';
 
 export default function CourseList() {
   const dispatch = useDispatch();
@@ -12,83 +13,45 @@ export default function CourseList() {
   const [activeGrade, setActiveGrade] = useState<number>(12);
 
   useEffect(() => {
-    const mockData = [
-      // Lớp 12
-      { 
-        id: '1', slug: 'nen-tang-toan-12', title: 'STEP 1 | Nền tảng Toán 12', describe: '', price: 1200000, 
-        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&h=400&fit=crop",
-        grade: 12, tags: ['Video']
-      },
-      { 
-        id: '2', slug: 'van-dung-toan-12', title: 'STEP 2 | Vận dụng Toán 12', describe: '', price: 1500000, 
-        image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&h=400&fit=crop",
-        grade: 12, tags: ['Video']
-      },
-      { 
-        id: '3', slug: 'van-dung-cao-toan-12', title: 'STEP 3 | Vận dụng cao Toán 12', describe: '', price: 1200000, 
-        image: "https://img.freepik.com/vector-cao-cap/cac-dau-toan-hoc-ve-tay-tren-bang-phan-do-hoa-va-cong-thuc-toan-hoc-hinh-hoc-hoac-hinh-anh-vat-ly-tren-bang-den-cac-bieu-tuong-vector-tan-thoi_53562-24899.jpg",
-        grade: 12, tags: ['Video', 'Livestream'], releaseDate: '01/12/2025'
-      },
-      { 
-        id: '4', slug: 'tong-on-luyen-de-12', title: 'STEP 4 | Tổng ôn & Luyện đề', describe: '', price: 1500000, 
-        image: "https://media.istockphoto.com/id/1805828348/vi/vec-to/ph%C3%A1c-th%E1%BA%A3o-c%C3%A1c-k%C3%BD-hi%E1%BB%87u-to%C3%A1n-h%E1%BB%8Dc-ph%C6%B0%C6%A1ng-tr%C3%ACnh-v%C3%A0-c%C3%B4ng-th%E1%BB%A9c-v%C3%A0-%C4%91%E1%BB%93-h%E1%BB%8Da-v%E1%BA%BD-ngu%E1%BB%87ch-ngo%E1%BA%A1c-vi%E1%BA%BFt-tay.jpg?s=612x612&w=0&k=20&c=jET9lm8WnRdM7n3YXhHofHeII7TJl8H4qrku-xlT6To=",
-        grade: 12, tags: ['Video', 'Livestream'], releaseDate: '01/12/2025'
-      },
-      // Lớp 11
-      { 
-        id: '5', slug: 'nen-tang-toan-11', title: 'STEP 1 | Nền tảng Toán 11', describe: '', price: 1100000, 
-        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&h=400&fit=crop",
-        grade: 11, tags: ['Video']
-      },
-      { 
-        id: '6', slug: 'van-dung-toan-11', title: 'STEP 2 | Vận dụng Toán 11', describe: '', price: 1500000, 
-        image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&h=400&fit=crop",
-        grade: 11, tags: ['Video']
-      },
-      { 
-        id: '7', slug: 'van-dung-cao-toan-11', title: 'STEP 3 | Vận dụng cao Toán 11', describe: '', price: 1100000, 
-        image: "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=600&h=400&fit=crop",
-        grade: 11, tags: ['Video', 'Livestream'], releaseDate: '01/11/2025'
-      },
-      { 
-        id: '8', slug: 'tong-on-luyen-de-11', title: 'STEP 4 | Tổng ôn & Luyện đề', describe: '', price: 1500000, 
-        image: "https://images.unsplash.com/photo-1580894894513-541e068a3e2b?w=600&h=400&fit=crop",
-        grade: 11, tags: ['Video', 'Livestream'], releaseDate: '01/11/2025'
-      },
-      
-      // Lớp 10
-      { 
-        id: '9', slug: 'nen-tang-toan-10', title: 'STEP 1 | Nền tảng Toán 10', describe: '', price: 1000000, 
-        image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&h=400&fit=crop",
-        grade: 10, tags: ['Video']
-      },
-      { 
-        id: '10', slug: 'van-dung-toan-10', title: 'STEP 2 | Vận dụng Toán 10', describe: '', price: 1500000, 
-        image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&h=400&fit=crop",
-        grade: 10, tags: ['Video']
-      },
-      { 
-        id: '11', slug: 'van-dung-cao-toan-10', title: 'STEP 3 | Vận dụng cao Toán 10', describe: '', price: 1000000, 
-        image: "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=600&h=400&fit=crop",
-        grade: 10, tags: ['Video', 'Livestream'], releaseDate: '01/10/2025'
-      },
-      { 
-        id: '12', slug: 'tong-on-luyen-de-10', title: 'STEP 4 | Tổng ôn & Luyện đề', describe: '', price: 1500000, 
-        image: "https://images.unsplash.com/photo-1580894894513-541e068a3e2b?w=600&h=400&fit=crop",
-        grade: 10, tags: ['Video', 'Livestream'], releaseDate: '01/10/2025'
-      },
-     
-    ];
-    dispatch(setCourses(mockData));
+    const fetchCourses = async () => {
+      try {
+        const res = await CourseService.getAllCourses();
+        if (Array.isArray(res)) {
+          dispatch(setCourses(res));
+        } else if (res && Array.isArray(res.data)) {
+          dispatch(setCourses(res.data));
+        }
+      } catch (err) {
+        console.error('Error fetching courses:', err);
+      }
+    };
+    fetchCourses();
   }, [dispatch]);
+
+  const getCourseImage = (course: any) => {
+    if (course.image) return course.image;
+    if (course.grade === 10) return "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=600&h=400&fit=crop";
+    if (course.grade === 11) return "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&h=400&fit=crop";
+    return "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&h=400&fit=crop";
+  };
 
   const examYear = 2026 + (12 - activeGrade);
   const birthYear = 2008 + (12 - activeGrade);
   
-  const filteredCourses = courses.filter(c => c.grade === activeGrade);
+  const getStepNumber = (slug: string) => {
+    const match = slug.match(/step-(\d+)/i);
+    if (match) {
+      return parseInt(match[1], 10);
+    }
+    return 99; // Các khóa học khác (không có từ khóa step) sẽ hiển thị ở cuối
+  };
+
+  const filteredCourses = [...courses]
+    .filter(c => c.grade === activeGrade)
+    .sort((a, b) => getStepNumber(a.slug) - getStepNumber(b.slug));
 
   return (
-    <section className="bg-white py-16 px-4 font-sans">
+    <section className="bg-white py-7 px-4 font-sans">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-center gap-4 mb-10">
           {[10, 11, 12].map(grade => (
@@ -108,12 +71,12 @@ export default function CourseList() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredCourses.map(course => (
-            <Link href={`/khoa-hoc/${course.slug}`} key={course.id} className="group">
+            <Link href={`/khoa-hoc/${course.slug}`} key={course._id || course.id} className="group">
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer h-full flex flex-col p-3">
                 
                 <div className="relative h-48 w-full rounded-xl overflow-hidden bg-[#00a2b8] p-2 flex items-center justify-center">
                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
-                  <img src={course.image} alt={course.title} className="h-full w-auto object-cover rounded shadow-md z-10" />
+                  <img src={getCourseImage(course)} alt={course.title} className="h-full w-auto object-cover rounded shadow-md z-10" />
                 </div>
 
                 <div className="pt-4 pb-2 px-2 flex flex-col flex-grow">

@@ -8,6 +8,18 @@ interface TeacherCoursesProps {
   onRefresh: () => void;
 }
 
+const generateSlug = (str: string) => {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .replace(/([^a-z0-9\s-]+)/g, '')
+    .trim()
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 export default function TeacherCourses({ courses, onRefresh }: TeacherCoursesProps) {
   const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
   
@@ -17,7 +29,7 @@ export default function TeacherCourses({ courses, onRefresh }: TeacherCoursesPro
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
 
   // Forms
-  const [courseForm, setCourseForm] = useState<CourseData>({ title: '', slug: '', price: 0, overview: '', description: '' });
+  const [courseForm, setCourseForm] = useState<CourseData>({ title: '', slug: '', price: 0, grade: 12, overview: '', description: '' });
   const [sectionForm, setSectionForm] = useState({ sectionTitle: '' });
   const [lessonForm, setLessonForm] = useState({
     title: '', subtitle: '', slug: '', videoType: 'youtube' as 'youtube' | 'vimeo' | 'bunny', videoId: '', duration: '', isFree: false
@@ -31,7 +43,8 @@ export default function TeacherCourses({ courses, onRefresh }: TeacherCoursesPro
     e.preventDefault();
     try {
       if (courseForm._id) {
-        await CourseService.updateCourse(courseForm.slug, courseForm);
+        const originalSlug = courses.find(c => c._id === courseForm._id)?.slug || courseForm.slug;
+        await CourseService.updateCourse(originalSlug, courseForm);
         alert('Cập nhật khóa học thành công!');
       } else {
         await CourseService.createCourse(courseForm);
@@ -146,7 +159,7 @@ export default function TeacherCourses({ courses, onRefresh }: TeacherCoursesPro
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-bold text-[#1e3a8a] text-lg">Danh sách khóa học</h2>
           <button
-            onClick={() => { setCourseForm({ title: '', slug: '', price: 0 }); setIsCourseModalOpen(true); }}
+            onClick={() => { setCourseForm({ title: '', slug: '', price: 0, grade: 12, overview: '', description: '' }); setIsCourseModalOpen(true); }}
             className="bg-[#1e3a8a] text-white hover:bg-[#fbbf24] hover:text-[#1e3a8a] transition-all text-xs font-bold py-1.5 px-3 rounded-full"
           >
             + Khóa mới
@@ -249,19 +262,59 @@ export default function TeacherCourses({ courses, onRefresh }: TeacherCoursesPro
             <form onSubmit={handleSaveCourse} className="flex flex-col gap-3 text-xs">
               <div>
                 <label className="block font-bold text-gray-500 mb-1">Tên khóa học</label>
-                <input type="text" value={courseForm.title} onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none" required />
+                <input 
+                  type="text" 
+                  value={courseForm.title} 
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setCourseForm({ 
+                      ...courseForm, 
+                      title: newTitle, 
+                      slug: generateSlug(newTitle) 
+                    });
+                  }} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none" 
+                  required 
+                />
               </div>
               <div>
-                <label className="block font-bold text-gray-500 mb-1">Slug URL</label>
-                <input type="text" value={courseForm.slug} onChange={(e) => setCourseForm({ ...courseForm, slug: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none" required />
+                <label className="block font-bold text-gray-400 mb-1">Slug URL (Tự động tạo)</label>
+                <input 
+                  type="text" 
+                  value={courseForm.slug} 
+                  disabled 
+                  className="w-full bg-gray-100 border border-gray-200 text-gray-400 rounded-lg py-2 px-3 focus:outline-none cursor-not-allowed" 
+                />
               </div>
               <div>
                 <label className="block font-bold text-gray-500 mb-1">Giá Bán (VNĐ)</label>
                 <input type="number" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none" required />
               </div>
               <div>
+                <label className="block font-bold text-gray-500 mb-1">Khối Lớp</label>
+                <select 
+                  value={courseForm.grade || 12} 
+                  onChange={(e) => setCourseForm({ ...courseForm, grade: Number(e.target.value) })} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none"
+                >
+                  <option value="10">Lớp 10</option>
+                  <option value="11">Lớp 11</option>
+                  <option value="12">Lớp 12</option>
+                </select>
+              </div>
+              <div>
                 <label className="block font-bold text-gray-500 mb-1">Mô tả tóm tắt</label>
                 <input type="text" value={courseForm.overview || ''} onChange={(e) => setCourseForm({ ...courseForm, overview: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block font-bold text-gray-500 mb-1">Mô tả khóa học (Viết thẻ HTML)</label>
+                <textarea 
+                  value={courseForm.description || ''} 
+                  onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })} 
+                  rows={4}
+                  placeholder="<p>Nhập mô tả bằng thẻ HTML ở đây...</p>"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 focus:outline-none"
+                />
               </div>
               <div className="flex gap-2 justify-end mt-4">
                 <button type="submit" className="px-4 py-2 bg-[#1e3a8a] text-white rounded-full font-bold hover:bg-[#fbbf24] hover:text-[#1e3a8a] transition-all">Lưu khóa học</button>

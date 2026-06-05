@@ -3,6 +3,7 @@ import { create } from "domain";
 
 interface Course {
     id: string;
+    _id?: string;
     title: string;
     describe: string;
     price: number;

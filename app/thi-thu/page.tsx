@@ -4,6 +4,56 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { ExamService, ExamData } from '@/services/ExamService';
 import { useSelector } from 'react-redux';
+import Link from 'next/link';
+
+// --- INLINE SVG ICONS ---
+const ExamIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+    <path d="M12 6v6l4 2" />
+  </svg>
+);
+
+const HomeworkIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+const HistoryIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 8v4l3 3" />
+    <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+  </svg>
+);
+
+const GradeIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c0 2 2.5 3 6 3s6-1 6-3v-5" />
+  </svg>
+);
+
+const Home = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const Bell = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const ChevronRight = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
 
 export default function MockExamPage() {
   const user = useSelector((state: any) => state.user);
@@ -25,13 +75,18 @@ export default function MockExamPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'history' && user?._id) {
-      ExamService.getStudentSubmissions(user._id).then(res => {
+  const fetchHistory = () => {
+    const studentId = user?._id || user?.id;
+    if (studentId) {
+      ExamService.getStudentSubmissions(studentId).then(res => {
         if (res.status === 'OK') setHistorySubmissions(res.data || []);
       });
     }
-  }, [activeTab, user]);
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, [user]);
 
   // Timer countdown
   useEffect(() => {
@@ -119,78 +174,91 @@ export default function MockExamPage() {
     return true;
   });
 
+  const getInitial = (name: string) => {
+    if (!name) return "H";
+    const words = name.trim().split(" ");
+    return words[words.length - 1].charAt(0).toUpperCase();
+  };
+
+  const studentName = user.name || "Học sinh";
+
+  const sectionTitles: Record<string, string> = {
+    exam: "Phòng Thi Online",
+    homework: "Bài Tập Về Nhà",
+    history: "Lịch Sử Làm Bài",
+    'grade-12': "Chuyên đề Lớp 12",
+    'grade-11': "Chuyên đề Lớp 11",
+    'grade-10': "Chuyên đề Lớp 10"
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#f3f4f6] text-gray-800 text-sm">
+    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
       {phase !== 'inProgress' && <Header />}
       
       {/* Main content below Header */}
       {phase === 'overview' && (
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar - White Background */}
-          <aside className="w-64 bg-white text-gray-800 shrink-0 border-r border-gray-200 flex flex-col justify-between hidden md:flex">
-            <div>
-              {/* Profile Block */}
-              <div className="p-5 border-b border-gray-200 flex items-center gap-3 bg-gray-50/60">
-                <div className="w-10 h-10 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm shrink-0 border border-gray-200">
-                  {user.name ? user.name[0].toUpperCase() : 'H'}
-                </div>
-                <div className="overflow-hidden">
-                  <p className="font-extrabold text-gray-900 truncate text-sm">{user.name || 'Học sinh'}</p>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Thành viên</p>
-                </div>
+          {/* Left Sidebar */}
+          <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
+            {/* User Info */}
+            <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm">
+                {getInitial(studentName)}
               </div>
-
-              {/* Sidebar Menu Items */}
-              <nav className="p-4 space-y-6">
-                <div>
-                  <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mb-2 px-2">Khối lớp học</span>
-                  <div className="flex flex-col gap-1">
-                    {[10, 11, 12].map(g => (
-                      <button
-                        key={g}
-                        onClick={() => setActiveTab(`grade-${g}` as any)}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === `grade-${g}` ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                      >
-                        Lớp {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mb-2 px-2">Nhiệm vụ & Đề thi</span>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => setActiveTab('exam')}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'exam' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                    >
-                      Phòng Thi Online
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('homework')}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'homework' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                    >
-                      Bài Tập Về Nhà
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-150">
-                  <button
-                    onClick={() => setActiveTab('history')}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'history' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                  >
-                    Lịch Sử Làm Bài
-                  </button>
-                </div>
-              </nav>
+              <div>
+                <p className="font-semibold text-gray-800 text-sm leading-tight">{studentName}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Thành viên</p>
+              </div>
             </div>
 
+            {/* Sidebar navigation */}
+            <nav className="flex-1 py-3 space-y-1">
+              <button
+                onClick={() => setActiveTab('exam')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'exam' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <ExamIcon />
+                Phòng Thi Online
+              </button>
+              <button
+                onClick={() => setActiveTab('homework')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'homework' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <HomeworkIcon />
+                Bài Tập Về Nhà
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <HistoryIcon />
+                Lịch Sử Làm Bài
+              </button>
+
+              <div className="pt-2">
+                <span className="text-[10px] text-gray-450 font-extrabold uppercase tracking-widest block mb-1 px-4">Luyện tập khối</span>
+                {[12, 11, 10].map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setActiveTab(`grade-${g}` as any)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === `grade-${g}` ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+                  >
+                    <GradeIcon />
+                    Đề thi Lớp {g}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
             {/* Back to Home */}
-            <div className="p-4 border-t border-gray-200">
-              <a href="/" className="w-full inline-flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 hover:text-gray-900 font-bold transition-all text-center">
+            <div className="border-t border-gray-200 p-3">
+              <Link
+                href="/"
+                className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-gray-600 hover:text-[#1e3a8a] rounded-xl hover:bg-blue-50 transition-all"
+              >
+                <Home size={16} />
                 Về Trang Chủ
-              </a>
+              </Link>
             </div>
           </aside>
 
@@ -198,32 +266,25 @@ export default function MockExamPage() {
           <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             {/* Top Toolbar */}
             <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-gray-400 font-medium">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>Thi thử</span>
-                <span>/</span>
-                <span className="text-gray-800 font-bold">
-                  {activeTab.startsWith('grade-') ? `Lớp ${activeTab.split('-')[1]}` : ''}
-                  {activeTab === 'exam' && 'Phòng Thi Online'}
-                  {activeTab === 'homework' && 'Bài Tập Về Nhà'}
-                  {activeTab === 'history' && 'Lịch Sử Làm Bài'}
-                </span>
+                <ChevronRight size={14} />
+                <span className="text-gray-800 font-bold">{sectionTitles[activeTab]}</span>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold text-gray-700">Hi, {user.name || 'Học sinh'}</span>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600 font-bold">Hi, {studentName}</span>
+                <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
+                  <Bell size={20} />
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white"></span>
+                </button>
+                <div className="w-8 h-8 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-xs">
+                  {getInitial(studentName)}
+                </div>
               </div>
             </header>
 
             {/* Dashboard Content */}
             <div className="p-6 md:p-8 space-y-6">
-              {/* Welcome banner */}
-              <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] text-white p-8 shadow-sm border border-blue-900/10">
-                <span className="bg-[#fbbf24]/20 text-[#fbbf24] text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider border border-[#fbbf24]/30">
-                  MTMath Proctoring System
-                </span>
-                <h1 className="text-2xl font-extrabold mt-3">Hệ Thống Luyện Đề & Bài Tập Về Nhà</h1>
-                <p className="mt-1.5 text-blue-100 text-sm">Phòng thi trực tuyến thông minh tự động giám sát vi phạm, chấm điểm chính xác và tức thì.</p>
-              </div>
-
               {/* Selection content */}
               {activeTab === 'history' ? (
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
@@ -231,7 +292,7 @@ export default function MockExamPage() {
                     Lịch sử bài làm của bạn
                   </h3>
                   {historySubmissions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 font-medium">Bạn chưa thực hiện nộp bài thi hay bài tập nào.</div>
+                    <div className="text-center py-12 text-gray-450 font-medium">Bạn chưa thực hiện nộp bài thi hay bài tập nào.</div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse text-sm">
@@ -279,29 +340,52 @@ export default function MockExamPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredExams.map((exam) => (
-                        <div key={exam._id} className="bg-white border border-gray-200 hover:border-gray-300 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:shadow-sm transition-all">
-                          <div>
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="font-bold px-2.5 py-0.5 rounded bg-blue-50 text-blue-700">Lớp {exam.grade || 12}</span>
-                              <span className={`font-bold px-2.5 py-0.5 rounded ${exam.type === 'exam' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>{exam.type === 'exam' ? 'Đề thi' : 'Bài tập'}</span>
+                      {filteredExams.map((exam) => {
+                        const examSub = historySubmissions.find(sub => 
+                          sub.status === 'completed' && 
+                          sub.examId && 
+                          (sub.examId._id === exam._id || sub.examId === exam._id)
+                        );
+                        return (
+                          <div key={exam._id} className="bg-white border border-gray-200 hover:border-gray-300 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:shadow-sm transition-all">
+                            <div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold px-2.5 py-0.5 rounded bg-blue-50 text-blue-700">Lớp {exam.grade || 12}</span>
+                                <span className={`font-bold px-2.5 py-0.5 rounded ${exam.type === 'exam' ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>{exam.type === 'exam' ? 'Đề thi' : 'Bài tập'}</span>
+                              </div>
+                              <h3 className="font-extrabold text-base text-gray-900 mt-3 line-clamp-1">{exam.title}</h3>
+                              <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">{exam.description || 'Không có mô tả chi tiết từ giáo viên.'}</p>
+                              
+                              <div className="mt-4 border-t pt-3 text-gray-500 font-bold flex gap-4 text-xs">
+                                <span>Thời gian: {exam.duration} phút</span>
+                                <span>{isThpt(exam) ? 'Đề THPT QG' : `${exam.questionsCount} câu hỏi`}</span>
+                              </div>
                             </div>
-                            <h3 className="font-extrabold text-base text-gray-900 mt-3 line-clamp-1">{exam.title}</h3>
-                            <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">{exam.description || 'Không có mô tả chi tiết từ giáo viên.'}</p>
-                            
-                            <div className="mt-4 border-t pt-3 text-gray-500 font-bold flex gap-4 text-xs">
-                              <span>Thời gian: {exam.duration} phút</span>
-                              <span>{isThpt(exam) ? 'Đề THPT QG' : `${exam.questionsCount} câu hỏi`}</span>
-                            </div>
+
+                            {examSub ? (
+                              <div className="mt-4 flex flex-col gap-2">
+                                <div className="flex items-center justify-between text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                                  <span>✓ Đã hoàn thành</span>
+                                  <span>Điểm: {examSub.score}/10</span>
+                                </div>
+                                <Link
+                                  href={`/thi-thu/${exam._id}`}
+                                  className="w-full mt-2 bg-gray-500 hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 rounded-xl transition-all text-center block"
+                                >
+                                  Làm lại
+                                </Link>
+                              </div>
+                            ) : (
+                              <Link
+                                href={`/thi-thu/${exam._id}`}
+                                className="w-full mt-5 bg-[#1e3a8a] hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 rounded-xl transition-all text-center block"
+                              >
+                                Bắt đầu làm bài
+                              </Link>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleStartExam(exam)}
-                            className="w-full mt-5 bg-[#1e3a8a] hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 rounded-xl transition-all"
-                          >
-                            Bắt đầu làm bài
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -472,8 +556,21 @@ export default function MockExamPage() {
             </div>
 
             <div className="flex gap-4 justify-center">
-              <button onClick={() => setPhase('overview')} className="bg-[#1e3a8a] text-white font-bold py-2.5 px-5 rounded-full hover:bg-[#fbbf24] hover:text-[#1e3a8a] transition-all">Quay lại danh sách</button>
-              <button onClick={() => handleStartExam(selectedExam)} className="border font-bold py-2.5 px-5 rounded-full hover:bg-gray-50 text-gray-700">Làm lại</button>
+              <button 
+                onClick={() => { 
+                  fetchHistory(); 
+                  setPhase('overview'); 
+                }} 
+                className="bg-[#1e3a8a] text-white font-bold py-2.5 px-5 rounded-full hover:bg-[#fbbf24] hover:text-[#1e3a8a] transition-all"
+              >
+                Quay lại danh sách
+              </button>
+              <Link 
+                href={`/thi-thu/${selectedExam._id}`} 
+                className="border font-bold py-2.5 px-5 rounded-full hover:bg-gray-50 text-gray-700 flex items-center justify-center"
+              >
+                Làm lại
+              </Link>
             </div>
           </div>
         </div>

@@ -3,6 +3,60 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Header from '@/components/layout/Header';
+import Link from 'next/link';
+
+// --- INLINE SVG ICONS ---
+const DashboardIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="9" />
+    <rect x="14" y="3" width="7" height="5" />
+    <rect x="14" y="12" width="7" height="9" />
+    <rect x="3" y="16" width="7" height="5" />
+  </svg>
+);
+
+const UsersIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const BookOpenIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </svg>
+);
+
+const CreditCardIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+
+const Home = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const Bell = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const ChevronRight = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
 
 interface Transaction {
   id: string;
@@ -68,75 +122,91 @@ export default function AdminPortal() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
 
+  const getInitial = (name: string) => {
+    if (!name) return "A";
+    const words = name.trim().split(" ");
+    return words[words.length - 1].charAt(0).toUpperCase();
+  };
+
+  const adminName = user.name || "admin";
+
+  const tabLabels: Record<string, string> = {
+    analytics: "Tổng quan hệ thống",
+    students: "Quản lý Học viên",
+    courses: "Danh sách Khóa học",
+    transactions: "Tài chính & Giao dịch"
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] text-gray-800 text-sm">
+    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
       <Header />
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - White Background */}
-        <aside className="w-64 bg-white text-gray-800 shrink-0 border-r border-gray-200 flex flex-col justify-between hidden md:flex">
-          <div>
-            {/* Profile Block */}
-            <div className="p-5 border-b border-gray-200 flex items-center gap-3 bg-gray-50/60">
-              <div className="w-10 h-10 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm shrink-0 border border-gray-200">
-                {user.name ? user.name[0].toUpperCase() : 'A'}
-              </div>
-              <div className="overflow-hidden">
-                <p className="font-extrabold text-gray-900 truncate text-sm">{user.name || 'Administrator'}</p>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Super Admin</p>
-              </div>
+        {/* Left Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
+          {/* User Info */}
+          <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm">
+              {getInitial(adminName)}
             </div>
-
-            {/* Sidebar Menu Items */}
-            <nav className="p-4 space-y-2">
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center gap-3 ${activeTab === 'analytics' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-              >
-                Tổng quan hệ thống
-              </button>
-              <button
-                onClick={() => setActiveTab('students')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center gap-3 ${activeTab === 'students' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-              >
-                Quản lý Học viên
-              </button>
-              <button
-                onClick={() => setActiveTab('courses')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center gap-3 ${activeTab === 'courses' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-              >
-                Danh sách Khóa học
-              </button>
-              <button
-                onClick={() => setActiveTab('transactions')}
-                className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all flex items-center gap-3 ${activeTab === 'transactions' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-              >
-                Tài chính & Giao dịch
-              </button>
-            </nav>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm leading-tight">{adminName}</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Super Admin</p>
+            </div>
           </div>
 
+          {/* Navigation */}
+          <nav className="flex-1 py-3 space-y-1">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'analytics' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <DashboardIcon />
+              Tổng quan hệ thống
+            </button>
+            <button
+              onClick={() => setActiveTab('students')}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <UsersIcon />
+              Quản lý Học viên
+            </button>
+            <button
+              onClick={() => setActiveTab('courses')}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'courses' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <BookOpenIcon />
+              Danh sách Khóa học
+            </button>
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'transactions' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <CreditCardIcon />
+              Tài chính & Giao dịch
+            </button>
+          </nav>
+
           {/* Back to Home */}
-          <div className="p-4 border-t border-gray-200">
-            <a href="/" className="w-full inline-flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 hover:text-gray-900 font-bold transition-all text-center">
+          <div className="border-t border-gray-200 p-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-gray-600 hover:text-[#1e3a8a] rounded-xl hover:bg-blue-50 transition-all"
+            >
+              <Home size={16} />
               Về Trang Chủ
-            </a>
+            </Link>
           </div>
         </aside>
 
         {/* Right Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           {/* Top Header Bar */}
           <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 text-sm">
-            <div className="flex items-center gap-2 text-gray-400 font-medium">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
               <span>Quản trị</span>
-              <span>/</span>
-              <span className="text-gray-800 font-bold">
-                {activeTab === 'analytics' && 'Tổng quan hệ thống'}
-                {activeTab === 'students' && 'Quản lý Học viên'}
-                {activeTab === 'courses' && 'Danh sách Khóa học'}
-                {activeTab === 'transactions' && 'Tài chính & Giao dịch'}
-              </span>
+              <ChevronRight size={14} />
+              <span className="text-gray-800 font-bold">{tabLabels[activeTab]}</span>
             </div>
             <div className="flex items-center gap-4">
               <input
@@ -144,9 +214,16 @@ export default function AdminPortal() {
                 placeholder="Tìm kiếm..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs w-48 focus:outline-none focus:border-blue-500"
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs w-48 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-gray-700 placeholder-gray-400 transition-all"
               />
-              <span className="font-bold text-gray-700">Hi, {user.name || 'Admin'}</span>
+              <span className="text-sm text-gray-600 font-bold">Hi, {adminName}</span>
+              <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
+                <Bell size={20} />
+                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white"></span>
+              </button>
+              <div className="w-8 h-8 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-xs">
+                {getInitial(adminName)}
+              </div>
             </div>
           </header>
 
@@ -158,7 +235,7 @@ export default function AdminPortal() {
               <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                     <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Doanh thu tháng này</span>
                     <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{formatCurrency(145500000)}</h3>
                     <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
@@ -166,7 +243,7 @@ export default function AdminPortal() {
                       <span className="text-gray-400 font-normal text-xs">so với tháng trước</span>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                     <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Học viên Active</span>
                     <h3 className="text-2xl font-extrabold text-gray-900 mt-1">1,240 học viên</h3>
                     <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
@@ -174,7 +251,7 @@ export default function AdminPortal() {
                       <span className="text-gray-400 font-normal text-xs">tương tác tuần này</span>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                     <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Khóa học & Tài liệu</span>
                     <h3 className="text-2xl font-extrabold text-gray-900 mt-1">385 bài học</h3>
                     <div className="mt-2 text-[#1e3a8a] font-bold flex items-center gap-1">
@@ -186,7 +263,7 @@ export default function AdminPortal() {
 
                 {/* Simulated Graph / Charts Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                     <h4 className="font-bold text-base text-gray-800 mb-4">Biểu đồ doanh thu 5 tháng qua</h4>
                     <div className="h-44 flex items-end gap-3 pt-6 px-2">
                       <div className="flex-1 flex flex-col items-center gap-2">
@@ -212,7 +289,7 @@ export default function AdminPortal() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                     <h4 className="font-bold text-base text-gray-800 mb-4">Tỷ lệ học sinh theo khối lớp</h4>
                     <div className="space-y-4 pt-2">
                       <div>
@@ -247,7 +324,7 @@ export default function AdminPortal() {
                 </div>
 
                 {/* Recent Giao Dịch */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-bold text-base text-gray-800">Giao dịch gần đây (VNPay/MoMo)</h4>
                     <button onClick={() => setActiveTab('transactions')} className="text-[#1e3a8a] font-bold hover:underline">Xem tất cả</button>
@@ -293,7 +370,7 @@ export default function AdminPortal() {
 
             {/* TAB: STUDENTS */}
             {activeTab === 'students' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -331,7 +408,7 @@ export default function AdminPortal() {
 
             {/* TAB: COURSES */}
             {activeTab === 'courses' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs text-sm">
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs text-sm">
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 flex justify-between items-center">
                     <div>
@@ -371,7 +448,7 @@ export default function AdminPortal() {
 
             {/* TAB: TRANSACTIONS */}
             {activeTab === 'transactions' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-150 shadow-xs">
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -415,9 +492,8 @@ export default function AdminPortal() {
             )}
 
           </div>
-        </main>
+        </div>
       </div>
-
     </div>
   );
 }

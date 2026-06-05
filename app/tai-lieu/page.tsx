@@ -4,6 +4,52 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { useSelector } from 'react-redux';
 import { DocumentService, DocumentData } from '@/services/DocumentService';
+import Link from 'next/link';
+
+// --- INLINE SVG ICONS ---
+const DocIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
+const GradeIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c0 2 2.5 3 6 3s6-1 6-3v-5" />
+  </svg>
+);
+
+const UploadIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+);
+
+const Home = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const Bell = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const ChevronRight = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
 
 export default function DocumentPage() {
   const user = useSelector((state: any) => state.user);
@@ -102,8 +148,24 @@ export default function DocumentPage() {
 
   const isTeacherOrAdmin = user.isTeacher || user.isAdmin;
 
+  const getInitial = (name: string) => {
+    if (!name) return "H";
+    const words = name.trim().split(" ");
+    return words[words.length - 1].charAt(0).toUpperCase();
+  };
+
+  const studentName = user.name || "Học sinh";
+
+  const tabLabels: Record<string, string> = {
+    all: "Tất cả tài liệu",
+    'grade-12': "Tài liệu Khối 12",
+    'grade-11': "Tài liệu Khối 11",
+    'grade-10': "Tài liệu Khối 10",
+    upload: "Đăng tải tài liệu mới"
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#f3f4f6] text-gray-800 text-sm">
+    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
       {/* Top Navigation Header */}
       {!selectedDoc && <Header />}
 
@@ -145,62 +207,66 @@ export default function DocumentPage() {
       ) : (
         /* MAIN LIST & UPLOAD GRID */
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar - White Background */}
-          <aside className="w-64 bg-white text-gray-800 shrink-0 border-r border-gray-200 flex flex-col justify-between hidden md:flex">
-            <div>
-              {/* Profile Block */}
-              <div className="p-5 border-b border-gray-200 flex items-center gap-3 bg-gray-50/60">
-                <div className="w-10 h-10 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm shrink-0 border border-gray-200">
-                  {user.name ? user.name[0].toUpperCase() : 'H'}
-                </div>
-                <div className="overflow-hidden">
-                  <p className="font-extrabold text-gray-900 truncate text-sm">{user.name || 'Học sinh'}</p>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Thành viên</p>
-                </div>
+          {/* Left Sidebar */}
+          <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
+            {/* User Info */}
+            <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-sm">
+                {getInitial(studentName)}
               </div>
-
-              {/* Sidebar Menu Items */}
-              <nav className="p-4 space-y-6">
-                <div>
-                  <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mb-2.5 px-2">Khối lớp học</span>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => setActiveTab('all')}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'all' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                    >
-                      Tất cả tài liệu
-                    </button>
-                    {[10, 11, 12].map(g => (
-                      <button
-                        key={g}
-                        onClick={() => setActiveTab(`grade-${g}` as any)}
-                        className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === `grade-${g}` ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                      >
-                        Tài liệu Lớp {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {isTeacherOrAdmin && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mb-2.5 px-2">Khu vực giáo viên</span>
-                    <button
-                      onClick={() => setActiveTab('upload')}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'upload' ? 'bg-[#1e3a8a] text-white shadow-sm' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                    >
-                      Đăng tải tài liệu mới
-                    </button>
-                  </div>
-                )}
-              </nav>
+              <div>
+                <p className="font-semibold text-gray-800 text-sm leading-tight">{studentName}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Thành viên</p>
+              </div>
             </div>
 
+            {/* Navigation */}
+            <nav className="flex-1 py-3 space-y-1">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'all' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <DocIcon />
+                Tất cả tài liệu
+              </button>
+
+              <div className="pt-2">
+                <span className="text-[10px] text-gray-450 font-extrabold uppercase tracking-widest block mb-1 px-4">Khối lớp học</span>
+                {[12, 11, 10].map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setActiveTab(`grade-${g}` as any)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === `grade-${g}` ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+                  >
+                    <GradeIcon />
+                    Tài liệu Lớp {g}
+                  </button>
+                ))}
+              </div>
+
+              {isTeacherOrAdmin && (
+                <div className="pt-4 border-t border-gray-200">
+                  <span className="text-[10px] text-gray-455 font-extrabold uppercase tracking-widest block mb-1 px-4">Giáo viên</span>
+                  <button
+                    onClick={() => setActiveTab('upload')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'upload' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
+                  >
+                    <UploadIcon />
+                    Đăng tài liệu mới
+                  </button>
+                </div>
+              )}
+            </nav>
+
             {/* Back to Home */}
-            <div className="p-4 border-t border-gray-200">
-              <a href="/" className="w-full inline-flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 hover:text-gray-900 font-bold transition-all text-center">
+            <div className="border-t border-gray-200 p-3">
+              <Link
+                href="/"
+                className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-gray-600 hover:text-[#1e3a8a] rounded-xl hover:bg-blue-50 transition-all"
+              >
+                <Home size={16} />
                 Về Trang Chủ
-              </a>
+              </Link>
             </div>
           </aside>
 
@@ -208,31 +274,25 @@ export default function DocumentPage() {
           <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             {/* Top Toolbar */}
             <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-gray-400 font-medium">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>Tài liệu</span>
-                <span>/</span>
-                <span className="text-gray-800 font-bold">
-                  {activeTab === 'all' && 'Tất cả tài liệu'}
-                  {activeTab.startsWith('grade-') ? `Lớp ${activeTab.split('-')[1]}` : ''}
-                  {activeTab === 'upload' && 'Đăng tải tài liệu mới'}
-                </span>
+                <ChevronRight size={14} />
+                <span className="text-gray-800 font-bold">{tabLabels[activeTab]}</span>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold text-gray-700">Hi, {user.name || 'Học sinh'}</span>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600 font-bold">Hi, {studentName}</span>
+                <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
+                  <Bell size={20} />
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white"></span>
+                </button>
+                <div className="w-8 h-8 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-xs">
+                  {getInitial(studentName)}
+                </div>
               </div>
             </header>
 
             {/* Dashboard Content */}
             <div className="p-6 md:p-8 space-y-6">
-              {/* Info banner */}
-              <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] text-white p-8 shadow-sm border border-blue-900/10">
-                <span className="bg-[#fbbf24]/20 text-[#fbbf24] text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider border border-[#fbbf24]/30">
-                  MTMath Library
-                </span>
-                <h1 className="text-2xl font-extrabold mt-3">Thư Viện Tài Liệu Học Tập & Chuyên Đề</h1>
-                <p className="mt-1.5 text-blue-100 text-sm">Tổng hợp các file chuyên đề toán học nâng cao, tài liệu ôn thi THPT Quốc Gia chia sẻ trực tiếp từ giáo viên.</p>
-              </div>
-
               {activeTab === 'upload' ? (
                 /* UPLOAD NEW DOCUMENT INTERFACE */
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs max-w-xl mx-auto">
@@ -279,7 +339,7 @@ export default function DocumentPage() {
                       <input
                         type="file"
                         onChange={e => setUploadFile(e.target.files ? e.target.files[0] : null)}
-                        className="w-full bg-slate-50 border p-2.5 rounded-lg focus:outline-none text-sm"
+                        className="w-full bg-slate-50 border p-2.5 rounded-lg focus:outline-none text-sm animate-pulse"
                         required
                       />
                     </div>
@@ -288,7 +348,7 @@ export default function DocumentPage() {
                       <button
                         type="submit"
                         disabled={isUploading}
-                        className="w-full bg-[#1e3a8a] text-white hover:bg-[#fbbf24] hover:text-[#1e3a8a] py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-[#1e3a8a] text-white hover:bg-[#fbbf24] hover:text-[#1e3a8a] py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                       >
                         {isUploading ? 'Đang tải lên...' : 'Đăng tải tài liệu'}
                       </button>

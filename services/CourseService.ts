@@ -20,6 +20,7 @@ export interface CourseData {
   title: string;
   slug: string;
   price: number;
+  grade?: number;
   overview?: string;
   description?: string;
   sections?: Section[];

@@ -143,29 +143,7 @@ export default function CourseDetailPage({
             </div>
 
             {activeTab === "noidung" && (
-              <div className="p-6">
-                {/* Góc Thống Kê Bên Phải */}
-                <div className="flex justify-end text-[13px] text-gray-600 mb-8 text-right leading-relaxed">
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      Cập nhật:{" "}
-                      {new Date(
-                        course.updatedAt || Date.now(),
-                      ).toLocaleDateString("vi-VN")}
-                    </p>
-                    <p className="flex items-center justify-end gap-1">
-                      Đánh giá: {course.rating || "4,8"}/5
-                      <span className="text-[#facc15] text-base tracking-widest">
-                        ★★★★★
-                      </span>
-                    </p>
-                    <p>
-                      Học viên: {course.students?.toLocaleString() || "99"}% đỗ
-                      B1
-                    </p>
-                  </div>
-                </div>
-
+              <div className="p-2">
                 {/* Nội dung bài viết từ Database */}
                 <article className="prose prose-blue max-w-none  text-gray-700 leading-relaxed">
                   <div
@@ -359,7 +337,7 @@ export default function CourseDetailPage({
 
               <div className="flex items-start gap-2 mb-6 text-[13px] text-gray-600 leading-relaxed">
                 <svg
-                  className="w-4 h-4 mt-1 shrink-0"
+                  className="w-4 h-4 mt-1 shrink-0 text-gray-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -375,9 +353,9 @@ export default function CourseDetailPage({
                   <span className="font-bold text-gray-700">
                     Cấu trúc khóa học:
                   </span>{" "}
-                  Khóa học tập trung vào 4 kỹ năng thi VSTEP B1: Nghe, Đọc, Nói,
-                  Viết - theo đúng cấu trúc và thang điểm của đề thi thật. Cập
-                  nhật tháng 3.2026
+                  {course.sections && course.sections.length > 0
+                    ? course.sections.map((sec: any) => sec.sectionTitle).join(", ")
+                    : "Chưa có chương học nào."}
                 </p>
               </div>
 
