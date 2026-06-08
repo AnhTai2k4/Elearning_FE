@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. TẠO TRẠM KIỂM SOÁT VỚI CẤU HÌNH MẶC ĐỊNH
 const axiosClient = axios.create({
-  baseURL: process.env.BE_API_URL || 'http://localhost:3001/api', 
+  baseURL: process.env.BE_API_URL, 
   headers: {
     'Content-Type': 'application/json',
   },
