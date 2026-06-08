@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import { useSelector } from 'react-redux';
 import { DocumentService, DocumentData } from '@/services/DocumentService';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // --- INLINE SVG ICONS ---
 const DocIcon = ({ size = 18 }) => (
@@ -53,9 +54,9 @@ const ChevronRight = ({ size = 18 }) => (
 
 export default function DocumentPage() {
   const user = useSelector((state: any) => state.user);
+  const router = useRouter();
 
   const [documents, setDocuments] = useState<DocumentData[]>([]);
-  const [selectedDoc, setSelectedDoc] = useState<DocumentData | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'grade-10' | 'grade-11' | 'grade-12' | 'upload'>('all');
   
   // Upload form state
@@ -167,46 +168,10 @@ export default function DocumentPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
       {/* Top Navigation Header */}
-      {!selectedDoc && <Header />}
+      <Header />
 
-      {selectedDoc ? (
-        /* PDF READER VIEW MODE */
-        <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col overflow-hidden text-sm">
-          {/* Reader Topbar */}
-          <div className="bg-slate-800 text-white px-6 py-3.5 flex items-center justify-between shrink-0 border-b border-slate-700 shadow-sm">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSelectedDoc(null)}
-                className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl transition-all"
-              >
-                Quay lại
-              </button>
-              <div>
-                <h2 className="font-extrabold text-base truncate max-w-lg">{selectedDoc.title}</h2>
-                <p className="text-xs text-gray-400">Lớp {selectedDoc.grade} • Học liệu MTMath</p>
-              </div>
-            </div>
-            <div className="text-xs text-gray-400 font-bold uppercase tracking-wider hidden sm:block">
-              MTMath Document Viewer
-            </div>
-          </div>
-          
-          {/* PDF Viewer Frame */}
-          <div className="flex-1 bg-slate-950 p-4 flex justify-center items-center">
-            {selectedDoc.fileUrl ? (
-              <iframe
-                src={selectedDoc.fileUrl}
-                className="w-full max-w-5xl h-full rounded-2xl border border-slate-800 shadow-2xl bg-white"
-                title={selectedDoc.title}
-              />
-            ) : (
-              <div className="text-center text-gray-400">Không tìm thấy liên kết tệp tài liệu.</div>
-            )}
-          </div>
-        </div>
-      ) : (
-        /* MAIN LIST & UPLOAD GRID */
-        <div className="flex-1 flex overflow-hidden">
+      {/* MAIN LIST & UPLOAD GRID */}
+      <div className="flex-1 flex overflow-hidden">
           {/* Left Sidebar */}
           <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
             {/* User Info */}
@@ -244,18 +209,6 @@ export default function DocumentPage() {
                 ))}
               </div>
 
-              {isTeacherOrAdmin && (
-                <div className="pt-4 border-t border-gray-200">
-                  <span className="text-[10px] text-gray-455 font-extrabold uppercase tracking-widest block mb-1 px-4">Giáo viên</span>
-                  <button
-                    onClick={() => setActiveTab('upload')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${activeTab === 'upload' ? 'bg-[#1e3a8a] text-white' : 'text-gray-655 hover:bg-gray-50 hover:text-gray-900'}`}
-                  >
-                    <UploadIcon />
-                    Đăng tài liệu mới
-                  </button>
-                </div>
-              )}
             </nav>
 
             {/* Back to Home */}
@@ -293,71 +246,8 @@ export default function DocumentPage() {
 
             {/* Dashboard Content */}
             <div className="p-6 md:p-8 space-y-6">
-              {activeTab === 'upload' ? (
-                /* UPLOAD NEW DOCUMENT INTERFACE */
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs max-w-xl mx-auto">
-                  <h2 className="font-bold text-base text-gray-900 mb-4 pb-2 border-b">Đăng tải tài liệu mới lên thư viện</h2>
-                  <form onSubmit={handleUploadSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tiêu đề tài liệu</label>
-                      <input
-                        type="text"
-                        value={uploadTitle}
-                        onChange={e => setUploadTitle(e.target.value)}
-                        placeholder="Ví dụ: Chuyên đề khảo sát hàm số 12 cực hay"
-                        className="w-full bg-slate-50 border p-2.5 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mô tả chi tiết</label>
-                      <textarea
-                        value={uploadDescription}
-                        onChange={e => setUploadDescription(e.target.value)}
-                        placeholder="Mô tả nội dung tài liệu..."
-                        rows={3}
-                        className="w-full bg-slate-50 border p-2.5 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Khối lớp học</label>
-                      <select
-                        value={uploadGrade}
-                        onChange={e => setUploadGrade(e.target.value as any)}
-                        className="w-full bg-slate-50 border p-2.5 rounded-lg font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      >
-                        <option value="10">Lớp 10</option>
-                        <option value="11">Lớp 11</option>
-                        <option value="12">Lớp 12</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn tệp tài liệu (PDF, Word, Ảnh...)</label>
-                      <input
-                        type="file"
-                        onChange={e => setUploadFile(e.target.files ? e.target.files[0] : null)}
-                        className="w-full bg-slate-50 border p-2.5 rounded-lg focus:outline-none text-sm animate-pulse"
-                        required
-                      />
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isUploading}
-                        className="w-full bg-[#1e3a8a] text-white hover:bg-[#fbbf24] hover:text-[#1e3a8a] py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                      >
-                        {isUploading ? 'Đang tải lên...' : 'Đăng tải tài liệu'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              ) : (
-                /* DOCUMENTS LIST VIEW */
-                <div>
+              {/* DOCUMENTS LIST VIEW */}
+              <div>
                   <h2 className="text-base font-bold text-gray-900 mb-4">
                     Học liệu thư viện hiện tại ({filteredDocs.length})
                   </h2>
@@ -370,7 +260,7 @@ export default function DocumentPage() {
                       {filteredDocs.map(doc => (
                         <div
                           key={doc._id}
-                          onClick={() => setSelectedDoc(doc)}
+                          onClick={() => router.push(`/tai-lieu/${doc._id}`)}
                           className="bg-white border border-gray-200 hover:border-gray-300 rounded-2xl p-6 shadow-xs flex flex-col justify-between hover:shadow-sm transition-all cursor-pointer relative group"
                         >
                           <div>
@@ -400,11 +290,9 @@ export default function DocumentPage() {
                     </div>
                   )}
                 </div>
-              )}
             </div>
           </main>
         </div>
-      )}
     </div>
   );
 }

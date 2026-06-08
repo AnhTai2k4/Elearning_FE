@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Header from '@/components/layout/Header';
 import Link from 'next/link';
+import { UserService, UserData } from '@/services/UserService';
+import { CourseService, CourseData } from '@/services/CourseService';
+import { DocumentService, DocumentData } from '@/services/DocumentService';
+import { ExamService, ExamData } from '@/services/ExamService';
+import { PaymentService, BackendTransaction } from '@/services/PaymentService';
 
 // --- INLINE SVG ICONS ---
 const DashboardIcon = ({ size = 18 }) => (
@@ -67,37 +72,63 @@ interface Transaction {
   date: string;
 }
 
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  joinDate: string;
-  status: 'Active' | 'Locked';
-  purchasedCourses: number;
-}
-
 export default function AdminPortal() {
   const user = useSelector((state: any) => state.user);
   const [activeTab, setActiveTab] = useState<'analytics' | 'students' | 'courses' | 'transactions'>('analytics');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sample transactions
-  const transactions: Transaction[] = [
-    { id: '#VN8823', student: 'Nguyễn Văn A', method: 'VNPay', amount: 1450000, status: 'Thành công', date: '2026-06-03 14:23' },
-    { id: '#MM9012', student: 'Trần Thị B', method: 'MoMo', amount: 890000, status: 'Thành công', date: '2026-06-03 11:15' },
-    { id: '#VN8824', student: 'Lê Hoàng C', method: 'VNPay', amount: 1450000, status: 'Chờ xử lý', date: '2026-06-02 21:05' },
-    { id: '#MM9013', student: 'Phạm Văn D', method: 'MoMo', amount: 500000, status: 'Thất bại', date: '2026-06-02 16:45' },
-    { id: '#VN8825', student: 'Bùi Minh E', method: 'VNPay', amount: 2000000, status: 'Thành công', date: '2026-06-01 09:30' },
-  ];
+  // Real database states
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [courses, setCourses] = useState<CourseData[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [exams, setExams] = useState<ExamData[]>([]);
+  const [dbTransactions, setDbTransactions] = useState<BackendTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample student list
-  const students: Student[] = [
-    { id: 'ST001', name: 'Nguyễn Văn A', email: 'vana@gmail.com', joinDate: '2026-04-12', status: 'Active', purchasedCourses: 3 },
-    { id: 'ST002', name: 'Trần Thị B', email: 'thib@gmail.com', joinDate: '2026-04-15', status: 'Active', purchasedCourses: 1 },
-    { id: 'ST003', name: 'Lê Hoàng C', email: 'hoangc@gmail.com', joinDate: '2026-05-01', status: 'Active', purchasedCourses: 2 },
-    { id: 'ST004', name: 'Phạm Văn D', email: 'vand@gmail.com', joinDate: '2026-05-18', status: 'Locked', purchasedCourses: 0 },
-    { id: 'ST005', name: 'Bùi Minh E', email: 'minhe@gmail.com', joinDate: '2026-06-01', status: 'Active', purchasedCourses: 4 },
-  ];
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      const [usersRes, coursesData, docsRes, examsRes, transactionsRes] = await Promise.all([
+        UserService.getAllUsers(),
+        CourseService.getAllCourses(),
+        DocumentService.getAllDocuments(),
+        ExamService.getAllExams(),
+        PaymentService.getAllTransactions()
+      ]);
+
+      if (usersRes && Array.isArray(usersRes.data)) {
+        setUsers(usersRes.data);
+      }
+      
+      if (Array.isArray(coursesData)) {
+        setCourses(coursesData);
+      } else if (coursesData && Array.isArray(coursesData.data)) {
+        setCourses(coursesData.data);
+      }
+
+      if (docsRes && Array.isArray(docsRes.data)) {
+        setDocuments(docsRes.data);
+      }
+      
+      if (examsRes && Array.isArray(examsRes.data)) {
+        setExams(examsRes.data);
+      }
+
+      if (transactionsRes && Array.isArray(transactionsRes.data)) {
+        setDbTransactions(transactionsRes.data);
+      }
+    } catch (err) {
+      console.error('Error fetching admin dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user.isAdmin) {
+      fetchAdminData();
+    }
+  }, [user.isAdmin]);
 
   if (!user.isAdmin) {
     return (
@@ -110,9 +141,9 @@ export default function AdminPortal() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Quyền truy cập bị từ chối</h2>
           <p className="text-gray-650 mb-6">Bạn cần đăng nhập bằng tài khoản Admin để truy cập trang quản trị này.</p>
-          <a href="/" className="inline-block bg-[#1e3a8a] hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 px-6 rounded-full transition-all">
+          <Link href="/" className="inline-block bg-[#1e3a8a] hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 px-6 rounded-full transition-all">
             Quay lại trang chủ
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -136,6 +167,92 @@ export default function AdminPortal() {
     courses: "Danh sách Khóa học",
     transactions: "Tài chính & Giao dịch"
   };
+
+  // --- STATS COMPUTING ---
+  const coursesMap: Record<string, CourseData> = {};
+  courses.forEach(c => {
+    if (c._id) coursesMap[c._id] = c;
+  });
+
+  const studentsList = users.filter(u => !u.isTeacher && !u.isAdmin);
+  const activeStudentsCount = studentsList.filter(u => u.courseBuyed && u.courseBuyed.length > 0).length;
+
+  let totalLessonsCount = 0;
+  courses.forEach(c => {
+    if (c.sections) {
+      c.sections.forEach(s => {
+        if (s.lessons) {
+          totalLessonsCount += s.lessons.length;
+        }
+      });
+    }
+  });
+  const totalContentCount = courses.length + documents.length + exams.length;
+
+  // Total revenue calculated by summing the prices of successful transactions
+  let totalRevenue = 0;
+  const transactions: Transaction[] = dbTransactions.map(tx => {
+    if (tx.status === 'Thành công') {
+      totalRevenue += tx.amount;
+    }
+    return {
+      id: tx.orderId || `#TX${tx._id.substring(18).toUpperCase()}`,
+      student: tx.user ? tx.user.name : 'Khách vãng lai',
+      method: tx.method as 'MoMo' | 'VNPay',
+      amount: tx.amount,
+      status: tx.status,
+      date: tx.createdAt ? new Date(tx.createdAt).toLocaleString('vi-VN') : 'Vừa qua'
+    };
+  });
+
+  // --- PAST 5 MONTHS REVENUE GRAPH ---
+  const getPast5MonthsRevenue = () => {
+    const monthsRevenue = [0, 0, 0, 0, 0];
+    const now = new Date();
+    
+    const monthLabels: string[] = [];
+    for (let i = 4; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthLabels.push(`T${d.getMonth() + 1}`);
+    }
+
+    dbTransactions.forEach(tx => {
+      if (tx.status === 'Thành công' && tx.createdAt) {
+        const txDate = new Date(tx.createdAt);
+        const diffMonths = (now.getFullYear() - txDate.getFullYear()) * 12 + (now.getMonth() - txDate.getMonth());
+        
+        const monthIndex = 4 - diffMonths;
+        if (monthIndex >= 0 && monthIndex < 5) {
+          monthsRevenue[monthIndex] += tx.amount;
+        } else if (diffMonths > 4) {
+          monthsRevenue[0] += tx.amount;
+        }
+      }
+    });
+
+    return { monthsRevenue, monthLabels };
+  };
+
+  const { monthsRevenue, monthLabels } = getPast5MonthsRevenue();
+  const maxRevenue = Math.max(...monthsRevenue, 1);
+
+  // --- GRADE DISTRIBUTION ---
+  let grade10Count = 0;
+  let grade11Count = 0;
+  let grade12Count = 0;
+
+  dbTransactions.forEach(tx => {
+    if (tx.status === 'Thành công' && tx.course) {
+      if (tx.course.grade === 10) grade10Count++;
+      else if (tx.course.grade === 11) grade11Count++;
+      else grade12Count++;
+    }
+  });
+
+  const totalGrades = grade10Count + grade11Count + grade12Count || 1;
+  const grade10Pct = Math.round((grade10Count / totalGrades) * 100);
+  const grade11Pct = Math.round((grade11Count / totalGrades) * 100);
+  const grade12Pct = Math.round((grade12Count / totalGrades) * 100);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
@@ -229,268 +346,261 @@ export default function AdminPortal() {
 
           {/* Dashboard Inner Content */}
           <div className="p-6 md:p-8 space-y-6 text-sm">
-            
-            {/* TAB: ANALYTICS */}
-            {activeTab === 'analytics' && (
-              <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Doanh thu tháng này</span>
-                    <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{formatCurrency(145500000)}</h3>
-                    <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
-                      <span>↑ 12%</span>
-                      <span className="text-gray-400 font-normal text-xs">so với tháng trước</span>
+            {loading ? (
+              <div className="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-bold">Đang tải dữ liệu hệ thống...</p>
+              </div>
+            ) : (
+              <>
+                {/* TAB: ANALYTICS */}
+                {activeTab === 'analytics' && (
+                  <div className="space-y-6">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Doanh thu hệ thống</span>
+                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</h3>
+                        <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
+                          <span>↑ 100%</span>
+                          <span className="text-gray-400 font-normal text-xs">từ live database</span>
+                        </div>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Học viên Active / Tổng</span>
+                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{activeStudentsCount} / {studentsList.length}</h3>
+                        <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
+                          <span>Tỉ lệ {Math.round((activeStudentsCount / (studentsList.length || 1)) * 100)}%</span>
+                          <span className="text-gray-400 font-normal text-xs">đã mua khóa học</span>
+                        </div>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Khóa học & Tài nguyên</span>
+                        <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{totalContentCount} học liệu</h3>
+                        <div className="mt-2 text-[#1e3a8a] font-bold flex items-center gap-1">
+                          <span>{courses.length} khóa • {documents.length} tài liệu • {exams.length} đề</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Học viên Active</span>
-                    <h3 className="text-2xl font-extrabold text-gray-900 mt-1">1,240 học viên</h3>
-                    <div className="mt-2 text-emerald-600 font-bold flex items-center gap-1">
-                      <span>↑ 5%</span>
-                      <span className="text-gray-400 font-normal text-xs">tương tác tuần này</span>
-                    </div>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Khóa học & Tài liệu</span>
-                    <h3 className="text-2xl font-extrabold text-gray-900 mt-1">385 bài học</h3>
-                    <div className="mt-2 text-[#1e3a8a] font-bold flex items-center gap-1">
-                      <span>↑ 18%</span>
-                      <span className="text-gray-400 font-normal text-xs">mới cập nhật</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Simulated Graph / Charts Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                    <h4 className="font-bold text-base text-gray-800 mb-4">Biểu đồ doanh thu 5 tháng qua</h4>
-                    <div className="h-44 flex items-end gap-3 pt-6 px-2">
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-blue-100 rounded-t-lg transition-all hover:bg-blue-200" style={{ height: '30%' }}></div>
-                        <span className="text-xs font-bold text-gray-500">T2</span>
+                    {/* Simulated Graph / Charts Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <h4 className="font-bold text-base text-gray-800 mb-4">Biểu đồ doanh thu 5 tháng qua</h4>
+                        <div className="h-44 flex items-end gap-3 pt-6 px-2">
+                          {monthsRevenue.map((rev, index) => {
+                            const pct = Math.max(8, Math.min(100, Math.round((rev / maxRevenue) * 90)));
+                            return (
+                              <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                                <span className="text-[9px] font-bold text-gray-500 text-center truncate w-full">{rev > 0 ? formatCurrency(rev) : '0đ'}</span>
+                                <div className="w-full bg-[#1e3a8a] rounded-t-lg transition-all hover:bg-yellow-400" style={{ height: `${pct}%` }}></div>
+                                <span className="text-xs font-bold text-gray-500">{monthLabels[index]}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-blue-200 rounded-t-lg transition-all hover:bg-blue-300" style={{ height: '55%' }}></div>
-                        <span className="text-xs font-bold text-gray-500">T3</span>
-                      </div>
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-blue-300 rounded-t-lg transition-all hover:bg-blue-450" style={{ height: '45%' }}></div>
-                        <span className="text-xs font-bold text-gray-500">T4</span>
-                      </div>
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-blue-400 rounded-t-lg transition-all hover:bg-blue-500" style={{ height: '70%' }}></div>
-                        <span className="text-xs font-bold text-gray-500">T5</span>
-                      </div>
-                      <div className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full bg-[#1e3a8a] rounded-t-lg transition-all" style={{ height: '90%' }}></div>
-                        <span className="text-xs font-bold text-gray-800">T6</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                    <h4 className="font-bold text-base text-gray-800 mb-4">Tỷ lệ học sinh theo khối lớp</h4>
-                    <div className="space-y-4 pt-2">
-                      <div>
-                        <div className="flex justify-between font-bold text-gray-600 mb-1">
-                          <span>Lớp 12</span>
-                          <span>48%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-[#1e3a8a] h-full rounded-full" style={{ width: '48%' }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between font-bold text-gray-600 mb-1">
-                          <span>Lớp 11</span>
-                          <span>32%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-indigo-500 h-full rounded-full" style={{ width: '32%' }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between font-bold text-gray-600 mb-1">
-                          <span>Lớp 10</span>
-                          <span>20%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: '20%' }}></div>
+                      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                        <h4 className="font-bold text-base text-gray-800 mb-4">Tỷ lệ mua khóa học theo khối</h4>
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <div className="flex justify-between font-bold text-gray-600 mb-1">
+                              <span>Lớp 12</span>
+                              <span>{grade12Pct}% ({grade12Count} lượt)</span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-[#1e3a8a] h-full rounded-full" style={{ width: `${grade12Pct}%` }}></div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between font-bold text-gray-600 mb-1">
+                              <span>Lớp 11</span>
+                              <span>{grade11Pct}% ({grade11Count} lượt)</span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${grade11Pct}%` }}></div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between font-bold text-gray-600 mb-1">
+                              <span>Lớp 10</span>
+                              <span>{grade10Pct}% ({grade10Count} lượt)</span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${grade10Pct}%` }}></div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Recent Giao Dịch */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-bold text-base text-gray-800">Giao dịch gần đây (VNPay/MoMo)</h4>
-                    <button onClick={() => setActiveTab('transactions')} className="text-[#1e3a8a] font-bold hover:underline">Xem tất cả</button>
+                    {/* Recent Giao Dịch */}
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-base text-gray-800">Giao dịch gần đây (MoMo)</h4>
+                        <button onClick={() => setActiveTab('transactions')} className="text-[#1e3a8a] font-bold hover:underline">Xem tất cả</button>
+                      </div>
+                      {transactions.length === 0 ? (
+                        <div className="py-8 text-center text-gray-400">Chưa có giao dịch nào được thực hiện.</div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-gray-400 font-bold">
+                                <th className="py-2.5">Mã GD</th>
+                                <th className="py-2.5">Học viên</th>
+                                <th className="py-2.5">Phương thức</th>
+                                <th className="py-2.5 text-right">Số tiền</th>
+                                <th className="py-2.5 text-center">Trạng thái</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-55">
+                              {transactions.slice(0, 5).map((tx) => (
+                                <tr key={tx.id} className="hover:bg-gray-50/50">
+                                  <td className="py-3 font-bold text-gray-900">{tx.id}</td>
+                                  <td className="py-3 font-bold text-gray-700">{tx.student}</td>
+                                  <td className="py-3">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${tx.method === 'VNPay' ? 'bg-blue-50 text-blue-600 border border-blue-150' : 'bg-pink-50 text-pink-600 border border-pink-150'}`}>
+                                      {tx.method}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 text-right font-extrabold text-gray-800">{formatCurrency(tx.amount)}</td>
+                                  <td className="py-3 text-center">
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700`}>
+                                      {tx.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-100 text-gray-400 font-bold">
-                          <th className="py-2.5">Mã GD</th>
-                          <th className="py-2.5">Học viên</th>
-                          <th className="py-2.5">Phương thức</th>
-                          <th className="py-2.5 text-right">Số tiền</th>
-                          <th className="py-2.5 text-center">Trạng thái</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {transactions.slice(0, 4).map((tx) => (
-                          <tr key={tx.id} className="hover:bg-gray-50/50">
-                            <td className="py-3 font-bold text-gray-900">{tx.id}</td>
-                            <td className="py-3 font-bold text-gray-700">{tx.student}</td>
-                            <td className="py-3">
-                              <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${tx.method === 'VNPay' ? 'bg-blue-50 text-blue-600 border border-blue-150' : 'bg-pink-50 text-pink-600 border border-pink-150'}`}>
-                                {tx.method}
-                              </span>
-                            </td>
-                            <td className="py-3 text-right font-extrabold text-gray-800">{formatCurrency(tx.amount)}</td>
-                            <td className="py-3 text-center">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold ${
-                                tx.status === 'Thành công' ? 'bg-emerald-50 text-emerald-700' :
-                                tx.status === 'Chờ xử lý' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                              }`}>
-                                {tx.status}
-                              </span>
-                            </td>
+                )}
+
+                {/* TAB: STUDENTS */}
+                {activeTab === 'students' && (
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-100 text-gray-400 font-bold">
+                            <th className="py-3">Mã HV</th>
+                            <th className="py-3">Họ & Tên</th>
+                            <th className="py-3">Email</th>
+                            <th className="py-3">Ngày gia nhập</th>
+                            <th className="py-3 text-center">Khóa đã mua</th>
+                            <th className="py-3 text-center">Trạng thái</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: STUDENTS */}
-            {activeTab === 'students' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-gray-400 font-bold">
-                        <th className="py-3">Mã HV</th>
-                        <th className="py-3">Họ & Tên</th>
-                        <th className="py-3">Email</th>
-                        <th className="py-3">Ngày gia nhập</th>
-                        <th className="py-3 text-center">Khóa mua</th>
-                        <th className="py-3 text-center">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {students
-                        .filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()) || st.email.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(st => (
-                          <tr key={st.id} className="hover:bg-gray-50/50">
-                            <td className="py-3.5 font-bold text-gray-900">{st.id}</td>
-                            <td className="py-3.5 font-bold text-gray-800">{st.name}</td>
-                            <td className="py-3.5 text-gray-655">{st.email}</td>
-                            <td className="py-3.5 text-gray-500">{st.joinDate}</td>
-                            <td className="py-3.5 text-center font-extrabold text-gray-700">{st.purchasedCourses}</td>
-                            <td className="py-3.5 text-center">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${st.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                                {st.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: COURSES */}
-            {activeTab === 'courses' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs text-sm">
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 flex justify-between items-center">
-                    <div>
-                      <p className="font-extrabold text-sm">Chế độ phân quyền Giáo viên</p>
-                      <p className="text-xs text-blue-600 mt-0.5">Giáo viên được cấp quyền upload nội dung bài học, chấm điểm và tạo kỳ thi tại trang /giao-vien.</p>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {studentsList
+                            .filter(st => st.name.toLowerCase().includes(searchTerm.toLowerCase()) || st.email.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .map(st => (
+                              <tr key={st._id} className="hover:bg-gray-50/50">
+                                <td className="py-3.5 font-bold text-gray-900">{st._id.substring(18).toUpperCase()}</td>
+                                <td className="py-3.5 font-bold text-gray-800">{st.name}</td>
+                                <td className="py-3.5 text-gray-600">{st.email}</td>
+                                <td className="py-3.5 text-gray-500">
+                                  {st.createdAt ? new Date(st.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                                </td>
+                                <td className="py-3.5 text-center font-extrabold text-gray-700">{st.courseBuyed?.length || 0}</td>
+                                <td className="py-3.5 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700`}>
+                                    Hoạt động
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="border border-gray-150 p-4 rounded-xl space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-800">Chuyên đề Toán học Lớp 12</span>
-                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-extrabold">Active</span>
+                {/* TAB: COURSES */}
+                {activeTab === 'courses' && (
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs text-sm">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 flex justify-between items-center">
+                        <div>
+                          <p className="font-extrabold text-sm">Chế độ phân quyền Giáo viên</p>
+                          <p className="text-xs text-blue-600 mt-0.5 font-semibold">Giáo viên được cấp quyền upload nội dung bài học, chấm điểm và tạo kỳ thi tại trang /giao-vien.</p>
+                        </div>
                       </div>
-                      <p className="text-gray-500 text-xs">Giáo trình nâng cao thi thử tốt nghiệp THPT Quốc Gia môn Toán.</p>
-                      <div className="flex justify-between text-gray-400 text-xs pt-1">
-                        <span>Lớp 12</span>
-                        <span>42 học viên đã mua</span>
-                      </div>
-                    </div>
 
-                    <div className="border border-gray-150 p-4 rounded-xl space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-800">Hình học Không gian Lớp 11</span>
-                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-extrabold">Active</span>
-                      </div>
-                      <p className="text-gray-500 text-xs">Luyện kỹ năng vẽ hình, tư duy hình học không gian 11.</p>
-                      <div className="flex justify-between text-gray-400 text-xs pt-1">
-                        <span>Lớp 11</span>
-                        <span>25 học viên đã mua</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {courses.map(course => {
+                          const purchasesCount = users.filter(u => u.courseBuyed && u.courseBuyed.includes(course._id!)).length;
+                          return (
+                            <div key={course._id} className="border border-gray-150 p-4 rounded-xl space-y-2 hover:shadow-sm transition-all bg-slate-50/50">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-gray-800">{course.title}</span>
+                                <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded font-extrabold">Hoạt động</span>
+                              </div>
+                              <p className="text-gray-500 text-xs line-clamp-2">{course.description || 'Không có mô tả chi tiết từ giáo viên.'}</p>
+                              <div className="flex justify-between text-gray-450 text-xs pt-1 font-bold">
+                                <span>Khối {course.grade || 12} • {formatCurrency(course.price)}</span>
+                                <span className="text-[#1e3a8a]">{purchasesCount} học viên đã mua</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* TAB: TRANSACTIONS */}
-            {activeTab === 'transactions' && (
-              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-100 text-gray-400 font-bold">
-                        <th className="py-3">Mã GD</th>
-                        <th className="py-3">Học viên</th>
-                        <th className="py-3">Ngày thực hiện</th>
-                        <th className="py-3">Phương thức</th>
-                        <th className="py-3 text-right">Số tiền</th>
-                        <th className="py-3 text-center">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {transactions
-                        .filter(tx => tx.student.toLowerCase().includes(searchTerm.toLowerCase()) || tx.id.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map((tx) => (
-                          <tr key={tx.id} className="hover:bg-gray-50/50">
-                            <td className="py-3.5 font-bold text-gray-900">{tx.id}</td>
-                            <td className="py-3.5 font-bold text-gray-800">{tx.student}</td>
-                            <td className="py-3.5 text-gray-550">{tx.date}</td>
-                            <td className="py-3.5">
-                              <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${tx.method === 'VNPay' ? 'bg-blue-50 text-blue-600 border border-blue-150' : 'bg-pink-50 text-pink-600 border border-pink-150'}`}>
-                                {tx.method}
-                              </span>
-                            </td>
-                            <td className="py-3.5 text-right font-extrabold text-gray-800">{formatCurrency(tx.amount)}</td>
-                            <td className="py-3.5 text-center">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold ${
-                                tx.status === 'Thành công' ? 'bg-emerald-50 text-emerald-700' :
-                                tx.status === 'Chờ xử lý' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                              }`}>
-                                {tx.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                {/* TAB: TRANSACTIONS */}
+                {activeTab === 'transactions' && (
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                    {transactions.length === 0 ? (
+                      <div className="py-8 text-center text-gray-400">Chưa có giao dịch nào trên hệ thống.</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-gray-400 font-bold">
+                              <th className="py-3">Mã GD</th>
+                              <th className="py-3">Học viên</th>
+                              <th className="py-3">Ngày thực hiện</th>
+                              <th className="py-3">Phương thức</th>
+                              <th className="py-3 text-right">Số tiền</th>
+                              <th className="py-3 text-center">Trạng thái</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {transactions
+                              .filter(tx => tx.student.toLowerCase().includes(searchTerm.toLowerCase()) || tx.id.toLowerCase().includes(searchTerm.toLowerCase()))
+                              .map((tx) => (
+                                <tr key={tx.id} className="hover:bg-gray-50/50">
+                                  <td className="py-3.5 font-bold text-gray-900">{tx.id}</td>
+                                  <td className="py-3.5 font-bold text-gray-800">{tx.student}</td>
+                                  <td className="py-3.5 text-gray-500">{tx.date}</td>
+                                  <td className="py-3.5">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-extrabold ${tx.method === 'VNPay' ? 'bg-blue-50 text-blue-600 border border-blue-150' : 'bg-pink-50 text-pink-600 border border-pink-150'}`}>
+                                      {tx.method}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 text-right font-extrabold text-gray-800">{formatCurrency(tx.amount)}</td>
+                                  <td className="py-3.5 text-center">
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700`}>
+                                      {tx.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
-
           </div>
         </div>
       </div>

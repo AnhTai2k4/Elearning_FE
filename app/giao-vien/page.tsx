@@ -9,6 +9,7 @@ import TeacherCourses from '@/components/teacher/TeacherCourses';
 import TeacherAnalytics from '@/components/teacher/TeacherAnalytics';
 import TeacherExams from '@/components/teacher/TeacherExams';
 import TeacherReviews from '@/components/teacher/TeacherReviews';
+import TeacherDocuments from '@/components/teacher/TeacherDocuments';
 import { PlanService } from '@/services/PlanService';
 import { CourseService, CourseData } from '@/services/CourseService';
 import { ExamService, ExamData } from '@/services/ExamService';
@@ -67,6 +68,15 @@ const ChevronRight = ({ size = 18 }) => (
   </svg>
 );
 
+const FileUp = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="12" y1="18" x2="12" y2="12" />
+    <polyline points="9 15 12 12 15 15" />
+  </svg>
+);
+
 // --- TYPES ---
 type MenuItem = {
   id: string;
@@ -78,6 +88,7 @@ const menuItems: MenuItem[] = [
   { id: "review", label: "Nhận xét kế hoạch", icon: <LayoutDashboard size={18} /> },
   { id: "courses", label: "Quản lý khóa học", icon: <BookOpen size={18} /> },
   { id: "exams", label: "Quản lý Đề thi & BT", icon: <FileText size={18} /> },
+  { id: "docs", label: "Đăng tải tài liệu", icon: <FileUp size={18} /> },
   { id: "stats", label: "Thống kê & Cảnh báo", icon: <BarChart2 size={18} /> },
 ];
 
@@ -100,6 +111,7 @@ export default function TeacherPage() {
     review: "Nhận xét kế hoạch",
     courses: "Quản lý khóa học",
     exams: "Quản lý Đề thi & BT",
+    docs: "Đăng tải tài liệu",
     stats: "Thống kê & Cảnh báo",
   };
 
@@ -202,7 +214,6 @@ export default function TeacherPage() {
                 key={item.id}
                 onClick={() => {
                   setActiveMenu(item.id);
-                  setSelectedSubmission(null);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
                   activeMenu === item.id
@@ -271,6 +282,12 @@ export default function TeacherPage() {
             {activeMenu === "exams" && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
                 <TeacherExams exams={exams} onRefresh={fetchData} />
+              </div>
+            )}
+
+            {activeMenu === "docs" && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+                <TeacherDocuments />
               </div>
             )}
 

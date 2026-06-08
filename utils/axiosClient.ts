@@ -2,8 +2,7 @@ import axios from 'axios';
 
 // 1. TẠO TRẠM KIỂM SOÁT VỚI CẤU HÌNH MẶC ĐỊNH
 const axiosClient = axios.create({
-  // Đảm bảo cổng 3001 này khớp với cổng Backend Node.js của em đang chạy
-  baseURL: 'http://localhost:3001/api', 
+  baseURL: process.env.BE_API_URL || 'http://localhost:3001/api', 
   headers: {
     'Content-Type': 'application/json',
   },
