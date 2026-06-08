@@ -51,7 +51,8 @@ export default function LoginModal({
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/user/sign-in", {
+      const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
+      const response = await fetch(`${apiBase}/user/sign-in`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,8 +113,9 @@ export default function LoginModal({
       try {
         // tokenResponse.access_token chính là cái vé Google cấp cho Front-end
         // Giờ mình ném cái vé này xuống Backend của em để BE xác thực với Google
+        const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
         const response = await fetch(
-          "http://localhost:3001/api/user/google-login",
+          `${apiBase}/user/google-login`,
           {
             method: "POST",
             headers: {

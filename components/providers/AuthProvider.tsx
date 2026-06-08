@@ -10,7 +10,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/user/refreshToken', {
+        const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
+        const res = await fetch(`${apiBase}/user/refreshToken`, {
           method: 'POST',
           credentials: 'include',
         })

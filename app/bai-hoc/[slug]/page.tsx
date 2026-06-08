@@ -46,8 +46,8 @@ export default function LessonDetailPage({
         setLoading(true);
         const courseSlug = courseSlugQuery ? decodeURIComponent(courseSlugQuery) : '';
         const decodedSlug = decodeURIComponent(slug);
-        
-        const response = await fetch(`http://localhost:3001/api/course/get-lesson/${encodeURIComponent(courseSlug)}/${encodeURIComponent(decodedSlug)}`);
+        const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
+        const response = await fetch(`${apiBase}/course/get-lesson/${encodeURIComponent(courseSlug)}/${encodeURIComponent(decodedSlug)}`);
         
         if (!response.ok) {
           throw new Error('Không tìm thấy bài học');
@@ -56,7 +56,7 @@ export default function LessonDetailPage({
         const data = await response.json();
         setLesson(data);
 
-        const courseResponse = await fetch(`http://localhost:3001/api/course/get-course/${encodeURIComponent(courseSlug)}`);
+        const courseResponse = await fetch(`${apiBase}/course/get-course/${encodeURIComponent(courseSlug)}`);
         if (courseResponse.ok) {
           const courseData = await courseResponse.json();
           setCourse(courseData);

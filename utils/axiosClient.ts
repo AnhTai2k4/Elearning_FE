@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. TẠO TRẠM KIỂM SOÁT VỚI CẤU HÌNH MẶC ĐỊNH
 const axiosClient = axios.create({
-  baseURL: process.env.BE_API_URL, 
+  baseURL: process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api', 
   headers: {
     'Content-Type': 'application/json',
   },

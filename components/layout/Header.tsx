@@ -38,8 +38,9 @@ export default function Header() {
   // Hàm xử lý Đăng xuất
   const handleLogout = async () => {
     try {
+      const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
       // Gọi API xóa session ở Backend
-      await fetch("http://localhost:3001/api/user/log-out", {
+      await fetch(`${apiBase}/user/log-out`, {
         method: "POST",
         credentials: "include",
       });

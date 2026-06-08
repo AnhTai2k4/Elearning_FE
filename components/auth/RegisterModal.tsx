@@ -51,7 +51,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
     try {
       // Bắn API xuống Backend
-      const response = await fetch('http://localhost:3001/api/user/sign-up', {
+      const apiBase = process.env.BE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://eleaning-be.vercel.app/api';
+      const response = await fetch(`${apiBase}/user/sign-up`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
