@@ -16,5 +16,9 @@ export const UserService = {
   getAllUsers: async () => {
     const response = await axiosClient.get('/user/getAllUser');
     return response.data;
+  },
+  completeLesson: async (userId: string, lessonId: string) => {
+    const response = await axiosClient.post('/user/complete-lesson', { userId, lessonId });
+    return response.data;
   }
 };

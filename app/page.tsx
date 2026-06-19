@@ -7,7 +7,7 @@ import TeacherSlider from '../components/home/TeacherSlider';
 import FeedbackSlider from '../components/home/FeedbackSlider';
 import Footer from '../components/layout/Footer';
 import BenefitsSection from '../components/home/BenefitsSection';
-
+import ClassSection from '../components/home/ClassSection';
 
 export default function Home() {
   return (
@@ -19,8 +19,8 @@ export default function Home() {
       <CourseList />
       <TeacherSlider />
       <BenefitsSection/>
+      <ClassSection />
       <FeedbackSlider />
-      <NewsSection />
       <Footer />
 
       {/* Sau này thêm danh sách khóa học, v.v. */}

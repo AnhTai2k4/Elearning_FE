@@ -85,6 +85,7 @@ export default function LoginModal({
           isTeacher: userData.isTeacher || userData.user?.isTeacher || false,
           phone: userData.phone || userData.user?.phone || "",
           courseBuyed: userData.courseBuyed || userData.user?.courseBuyed || [],
+          completedLessons: userData.completedLessons || userData.user?.completedLessons || [],
         };
 
         dispatch(updateUser(userInfo));
@@ -143,6 +144,8 @@ export default function LoginModal({
             isAdmin: data.isAdmin || data.user?.isAdmin || false,
             isTeacher: data.isTeacher || data.user?.isTeacher || false,
             phone: data.phone || data.user?.phone || "",
+            courseBuyed: data.courseBuyed || data.user?.courseBuyed || [],
+            completedLessons: data.completedLessons || data.user?.completedLessons || [],
           };
 
           // Lưu Redux và LocalStorage

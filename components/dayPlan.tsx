@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 
 export interface DayPlanRow {
   aspect: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   actualTime: number;
   action: string;
   score: number;
@@ -24,6 +25,7 @@ interface DayPlanProps {
     teacherScore?: number;
     teacherCommentAt?: string;
   };
+  categories?: string[];
 }
 
 export default function DayPlan({
@@ -31,11 +33,13 @@ export default function DayPlan({
   onBack,
   onSavePlan,
   initialPlan,
+  categories = [],
 }: DayPlanProps) {
   const [activeTab, setActiveTab] = useState<'draft' | 'mentor'>('draft');
   const [rows, setRows] = useState<DayPlanRow[]>([]);
   const [reflection, setReflection] = useState('');
   const [status, setStatus] = useState<'draft' | 'submitted' | 'reviewed'>('draft');
+  const [validationError, setValidationError] = useState('');
 
   // Sync initialPlan when it changes or loads
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function DayPlan({
   };
 
   const handleAddRow = () => {
-    setRows((prev) => [...prev, { aspect: '', time: '', actualTime: 0, action: '', score: 10 }]);
+    setRows((prev) => [...prev, { aspect: categories[0] || '', startTime: '', endTime: '', actualTime: 0, action: '', score: 10 }]);
   };
 
   const handleRemoveRow = (index: number) => {
@@ -69,6 +73,10 @@ export default function DayPlan({
   };
 
   const handleSubmitTeacher = () => {
+    if (!reflection.trim()) {
+      setValidationError('Vui lòng nhập Bài học & Đúc kết trong ngày trước khi nộp cho giáo viên đánh giá!');
+      return;
+    }
     setStatus('submitted');
     onSavePlan({ rows, reflection, status: 'submitted' });
   };
@@ -150,12 +158,12 @@ export default function DayPlan({
 
             {/* Table wrapper */}
             <div className="border border-gray-200 rounded-xl overflow-hidden shadow-inner mb-4 overflow-x-auto">
-              <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
+              <table className="w-full text-left border-collapse table-fixed min-w-[1050px]">
                 <thead>
                   <tr className="bg-[#eef4f8] text-[#002b49] text-[13px] font-bold border-b border-gray-200">
                     <th className="p-4 w-[60px] text-center">STT</th>
                     <th className="p-4 w-[180px]">Khía cạnh</th>
-                    <th className="p-4 w-[160px]">Thời gian dự kiến</th>
+                    <th className="p-4 w-[250px]">Thời gian dự kiến</th>
                     <th className="p-4">Hành động cụ thể</th>
                     <th className="p-4 w-[180px]">Thời gian đã thực hiện (Cuối ngày)</th>
                     <th className="p-4 w-[110px] text-center">Chấm điểm</th>
@@ -176,24 +184,45 @@ export default function DayPlan({
                         
                         {/* Khía cạnh */}
                         <td className="p-2">
-                          <input
-                            type="text"
-                            value={row.aspect}
-                            onChange={(e) => handleInputChange(idx, 'aspect', e.target.value)}
-                            placeholder="Luyện nghe, Từ vựng..."
-                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC]/20 outline-none"
-                          />
+                          {categories.length > 0 ? (
+                            <select
+                              value={row.aspect}
+                              onChange={(e) => handleInputChange(idx, 'aspect', e.target.value)}
+                              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC]/20 outline-none"
+                            >
+                              <option value="">Chọn khía cạnh...</option>
+                              {categories.map((cat, i) => (
+                                <option key={i} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              value={row.aspect}
+                              onChange={(e) => handleInputChange(idx, 'aspect', e.target.value)}
+                              placeholder="Luyện nghe, Từ vựng..."
+                              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC]/20 outline-none"
+                            />
+                          )}
                         </td>
 
                         {/* Thời gian dự kiến */}
                         <td className="p-2">
-                          <input
-                            type="text"
-                            value={row.time}
-                            onChange={(e) => handleInputChange(idx, 'time', e.target.value)}
-                            placeholder="Ví dụ: 08:00 - 09:30"
-                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC]/20 outline-none"
-                          />
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="time"
+                              value={row.startTime}
+                              onChange={(e) => handleInputChange(idx, 'startTime', e.target.value)}
+                              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-[13px] focus:border-[#0072BC] outline-none"
+                            />
+                            <span className="text-gray-400 font-bold">-</span>
+                            <input
+                              type="time"
+                              value={row.endTime}
+                              onChange={(e) => handleInputChange(idx, 'endTime', e.target.value)}
+                              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-[13px] focus:border-[#0072BC] outline-none"
+                            />
+                          </div>
                         </td>
 
                         {/* Hành động */}
@@ -314,6 +343,31 @@ export default function DayPlan({
               <p className="text-gray-500 font-bold text-[14px]">Giáo viên chưa đánh giá.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Validation Alert Popup */}
+      {validationError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Thiếu thông tin</h3>
+              <p className="text-[14px] text-gray-600 leading-relaxed mb-6">
+                {validationError}
+              </p>
+              <button
+                onClick={() => setValidationError('')}
+                className="w-full bg-[#0072BC] hover:bg-[#005e9c] text-white font-bold text-[14px] py-3 rounded-xl transition-all shadow-sm"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

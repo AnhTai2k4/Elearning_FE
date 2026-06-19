@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 
 export interface TargetRow {
   aspect: string;
-  duration: string;
+  duration: number;
   action: string;
   expectedScore: number;
 }
@@ -48,7 +48,7 @@ export default function MonthTarget({
   const handleAddRow = () => {
     setRows((prev) => [
       ...prev,
-      { aspect: '', duration: '', action: '', expectedScore: 10 },
+      { aspect: '', duration: 0, action: '', expectedScore: 10 },
     ]);
   };
 
@@ -59,7 +59,7 @@ export default function MonthTarget({
   const handleSave = () => {
     // Filter out rows that are completely empty
     const filteredRows = rows.filter(
-      (row) => row.aspect.trim() || row.duration.trim() || row.action.trim()
+      (row) => row.aspect.trim() || row.duration > 0 || row.action.trim()
     );
     onSave(filteredRows);
     onClose();
@@ -103,7 +103,7 @@ export default function MonthTarget({
                 <tr className="bg-[#eef4f8] text-[#002b49] text-[13px] font-bold border-b border-gray-200">
                   <th className="p-4 w-[60px] text-center">STT</th>
                   <th className="p-4 w-[220px]">Khía cạnh</th>
-                  <th className="p-4 w-[200px]">Thời gian dự kiến /Tuần</th>
+                  <th className="p-4 w-[200px] text-center">Số giờ trên tuần</th>
                   <th className="p-4">Hành động cụ thể</th>
                   <th className="p-4 w-[130px] text-center">Điểm kỳ vọng</th>
                   <th className="p-4 w-[50px] text-center"></th>
@@ -129,15 +129,19 @@ export default function MonthTarget({
                       />
                     </td>
 
-                    {/* Thời gian dự kiến / Tuần */}
+                    {/* Số giờ trên tuần */}
                     <td className="p-2">
-                      <input
-                        type="text"
-                        value={row.duration}
-                        onChange={(e) => handleInputChange(idx, 'duration', e.target.value)}
-                        placeholder="Ví dụ: 15 tiếng/Tuần"
-                        className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:border-[#0072BC] focus:ring-1 focus:ring-[#0072BC]/20 outline-none"
-                      />
+                      <div className="flex items-center justify-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5 w-full max-w-[120px] mx-auto focus-within:border-[#0072BC] focus-within:ring-1 focus-within:ring-[#0072BC]/20">
+                        <input
+                          type="number"
+                          min="0"
+                          value={row.duration}
+                          onChange={(e) => handleInputChange(idx, 'duration', Math.max(0, Number(e.target.value) || 0))}
+                          placeholder="0"
+                          className="w-12 text-center font-bold text-gray-700 bg-transparent outline-none text-[13px]"
+                        />
+                        <span className="text-gray-400 text-[12px] font-medium">giờ</span>
+                      </div>
                     </td>
 
                     {/* Hành động cụ thể */}

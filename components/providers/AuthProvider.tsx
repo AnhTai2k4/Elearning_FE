@@ -28,7 +28,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             isTeacher: json.data.user.isTeacher || false,
             password: '',
             phone: json.data.user.phone || '',
-            courseBuyed: json.data.user.courseBuyed || []
+            courseBuyed: json.data.user.courseBuyed || [],
+            completedLessons: json.data.user.completedLessons || []
           }
           dispatch(updateUser(userInfo));
           localStorage.setItem('user_info', JSON.stringify(userInfo));

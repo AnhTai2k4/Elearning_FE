@@ -3,16 +3,18 @@
 import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import MonthTarget, { TargetRow } from '@/components/monthTarget';
 import DayPlan, { DayPlanRow } from '@/components/dayPlan';
 import { PlanService } from '@/services/PlanService';
 
 export default function NotebookPage() {
   const user = useSelector((state: any) => state.user);
+  const router = useRouter();
   
   // Date and selector states
-  const [selectedMonth, setSelectedMonth] = useState<number>(5); // May
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
   // Goals state using modal TargetRow type
   const [goals, setGoals] = useState<TargetRow[]>([]);
@@ -22,7 +24,7 @@ export default function NotebookPage() {
   const [activeView, setActiveView] = useState<'dashboard' | 'day-plan'>('dashboard');
 
   // Currently selected day in the calendar grid
-  const [selectedDay, setSelectedDay] = useState<number>(22);
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
 
   // Store day plan details mapping: "day-month-year" -> plan data
   const [dayPlans, setDayPlans] = useState<Record<string, { 
@@ -37,8 +39,8 @@ export default function NotebookPage() {
     teacherCommentAt?: string;
   }>>({});
 
-  // Calendar marked days: mapping day number -> state ('completed' | 'planned' | 'none')
-  const [markedDays, setMarkedDays] = useState<Record<number, 'completed' | 'planned' | 'none'>>({});
+  // Calendar marked days: mapping day number -> state ('completed' | 'planned' | 'reviewed' | 'none')
+  const [markedDays, setMarkedDays] = useState<Record<number, 'completed' | 'planned' | 'reviewed' | 'none'>>({});
 
   // Sync data from database using useEffect and PlanService
   React.useEffect(() => {
@@ -61,7 +63,7 @@ export default function NotebookPage() {
     PlanService.getDailyActions(user.id, startStr, endStr)
       .then(res => {
         if (res.status === 'OK' && res.data) {
-          const newMarked: Record<number, 'completed' | 'planned' | 'none'> = {};
+          const newMarked: Record<number, 'completed' | 'planned' | 'reviewed' | 'none'> = {};
           const newPlansMap: Record<string, { 
             rows: DayPlanRow[]; 
             reflection: string; 
@@ -77,9 +79,13 @@ export default function NotebookPage() {
           res.data.forEach((action: any) => {
             const actDate = new Date(action.date);
             const dayNum = actDate.getDate();
-            newMarked[dayNum] = (action.status === 'submitted' || action.status === 'reviewed')
-              ? 'completed'
-              : 'planned';
+            if (action.status === 'reviewed') {
+              newMarked[dayNum] = 'reviewed';
+            } else if (action.status === 'submitted') {
+              newMarked[dayNum] = 'completed';
+            } else {
+              newMarked[dayNum] = 'planned';
+            }
             
             const dateKey = `${dayNum}-${selectedMonth}-${selectedYear}`;
             newPlansMap[dateKey] = {
@@ -227,20 +233,6 @@ export default function NotebookPage() {
     ? (submittedPlans.reduce((sum, plan) => sum + (plan.selfScore ?? 10), 0) / submittedPlans.length).toFixed(1)
     : '0';
 
-  if (activeView === 'day-plan') {
-    return (
-      <div className="min-h-screen bg-[#faf8f6] font-sans text-gray-800 pb-20">
-        <Header />
-        <DayPlan
-          dateLabel={`${selectedDay < 10 ? '0' + selectedDay : selectedDay}/${selectedMonth < 10 ? '0' + selectedMonth : selectedMonth}/${selectedYear}`}
-          onBack={() => setActiveView('dashboard')}
-          onSavePlan={handleSaveDayPlan}
-          initialPlan={dayPlans[`${selectedDay}-${selectedMonth}-${selectedYear}`]}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#faf8f6] font-sans text-gray-800 pb-20">
       <Header />
@@ -250,24 +242,6 @@ export default function NotebookPage() {
         {/* Top Header section: Title and Month dropdown */}
         <div className="flex items-center gap-4 mb-8">
           <h1 className="text-[26px] font-black text-[#005082]">Tổng quan</h1>
-          <div className="relative">
-            <select
-              value={`${selectedMonth}-${selectedYear}`}
-              onChange={(e) => {
-                const [m, y] = e.target.value.split('-').map(Number);
-                setSelectedMonth(m);
-                setSelectedYear(y);
-              }}
-              className="appearance-none bg-white border border-gray-200 rounded-full px-5 py-1.5 pr-10 text-[13px] font-medium text-gray-600 outline-none shadow-sm cursor-pointer hover:border-gray-300 transition-all"
-            >
-              <option value="5-2026">Tháng 5, 2026</option>
-              <option value="6-2026">Tháng 6, 2026</option>
-              <option value="7-2026">Tháng 7, 2026</option>
-            </select>
-            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400 text-[10px]">
-              ▼
-            </div>
-          </div>
         </div>
 
         {/* 4 Statistics Cards Row */}
@@ -376,6 +350,7 @@ export default function NotebookPage() {
               {/* Days Numbers */}
               <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((item, idx) => {
+                  const isReviewed = markedDays[item.day] === 'reviewed' && item.isCurrentMonth;
                   const isCompleted = markedDays[item.day] === 'completed' && item.isCurrentMonth;
                   const isPlanned = markedDays[item.day] === 'planned' && item.isCurrentMonth;
                   const isSelected = selectedDay === item.day && item.isCurrentMonth;
@@ -392,6 +367,8 @@ export default function NotebookPage() {
                           ? 'border-transparent text-gray-300 cursor-default' 
                           : isSelected
                           ? 'border-gray-400 bg-gray-200/80 text-gray-800 ring-2 ring-gray-300/40'
+                          : isReviewed
+                          ? 'border-yellow-500 bg-yellow-50/50 text-yellow-700'
                           : isCompleted
                           ? 'border-green-500 bg-green-50/30 text-green-700'
                           : isPlanned
@@ -407,6 +384,10 @@ export default function NotebookPage() {
 
               {/* Calendar Legend */}
               <div className="mt-6 pt-4 border-t border-gray-50 flex flex-wrap gap-4 items-center justify-center text-[12px] text-gray-600">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded border border-yellow-500 bg-yellow-50/50"></div>
+                  <span>GV đã nhận xét</span>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded border border-green-500 bg-green-50/30"></div>
                   <span>Đã hoàn thành</span>
@@ -424,7 +405,11 @@ export default function NotebookPage() {
               {/* Lập kế hoạch button for the selected day */}
               {selectedDay && (
                 <button
-                  onClick={() => setActiveView('day-plan')}
+                  onClick={() => {
+                    const monthStr = selectedMonth < 10 ? '0' + selectedMonth : selectedMonth.toString();
+                    const dayStr = selectedDay < 10 ? '0' + selectedDay : selectedDay.toString();
+                    router.push(`/so-tay/${selectedYear}-${monthStr}-${dayStr}`);
+                  }}
                   className="w-full mt-5 bg-[#0072BC] hover:bg-[#005e9c] text-white font-bold text-[13px] py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all"
                 >
                   {(markedDays[selectedDay] === 'completed' || markedDays[selectedDay] === 'planned') ? 'Xem kế hoạch hôm nay' : 'Lập kế hoạch ngày hôm nay'}{' '}
@@ -465,7 +450,7 @@ export default function NotebookPage() {
                       <tr className="bg-gray-50 text-[#002b49] text-[12px] font-bold border-b border-gray-200">
                         <th className="p-3 w-12 text-center">STT</th>
                         <th className="p-3">Khía cạnh</th>
-                        <th className="p-3">Dự kiến /Tuần</th>
+                        <th className="p-3 text-center">Số giờ /Tuần</th>
                         <th className="p-3">Hành động</th>
                         <th className="p-3 text-center">Kỳ vọng</th>
                       </tr>
@@ -475,7 +460,7 @@ export default function NotebookPage() {
                         <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                           <td className="p-3 text-center font-bold text-gray-400">{idx + 1}</td>
                           <td className="p-3 font-semibold text-gray-700">{goal.aspect}</td>
-                          <td className="p-3 text-gray-600">{goal.duration}</td>
+                          <td className="p-3 text-gray-600 text-center font-bold">{goal.duration} <span className="font-normal text-xs">giờ</span></td>
                           <td className="p-3 text-gray-600">{goal.action}</td>
                           <td className="p-3 text-center font-black text-[#f15a24]">{goal.expectedScore}/10</td>
                         </tr>

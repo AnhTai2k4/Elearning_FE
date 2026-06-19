@@ -268,7 +268,13 @@ export default function CourseDetailPage({
                                   </p>
                                 </div>
                               </div>
-                              {lesson.isFree ? (
+                              {user?.completedLessons?.includes(lesson._id) ? (
+                                <span className="text-green-500 bg-green-50 p-1 rounded-full" title="Đã hoàn thành">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </span>
+                              ) : lesson.isFree ? (
                                 <span className="text-[10px] font-bold text-[#f15a24] bg-orange-100 px-2 py-0.5 rounded animate-pulse">
                                   FREE
                                 </span>
