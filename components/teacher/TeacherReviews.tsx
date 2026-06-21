@@ -183,7 +183,7 @@ export default function TeacherReviews({
                     {selectedPlan.tasks?.map((task: any, idx: number) => (
                       <tr key={idx} className="border-b border-gray-50">
                         <td className="p-2 font-semibold text-gray-900">{task.aspect}</td>
-                        <td className="p-2 text-center text-gray-600">{task.time}h</td>
+                        <td className="p-2 text-center text-gray-600">{`${task.startTime} - ${task.endTime}`}</td>
                         <td className="p-2 text-center font-bold text-green-700">{task.actualTime}h</td>
                         <td className="p-2 text-gray-600 truncate max-w-[120px]">{task.action}</td>
                       </tr>

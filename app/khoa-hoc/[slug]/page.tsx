@@ -8,6 +8,7 @@ import axiosClient from "@/utils/axiosClient";
 import Header from "@/components/layout/Header";
 import { useRouter } from "next/navigation";
 import LoginModal from "@/components/auth/LoginModal";
+import LessonComments from "@/components/lesson/LessonComments";
 
 // 2. Sửa lại kiểu dữ liệu của params thành Promise
 export default function CourseDetailPage({
@@ -31,6 +32,7 @@ export default function CourseDetailPage({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("noidung");
   const [openSections, setOpenSections] = useState<number[]>([0]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Gọi API lấy dữ liệu
   useEffect(() => {
@@ -143,33 +145,19 @@ export default function CourseDetailPage({
             </div>
 
             {activeTab === "noidung" && (
-              <div className="p-2">
+              <div className="p-6">
                 {/* Nội dung bài viết từ Database */}
                 <article className="prose prose-blue max-w-none  text-gray-700 leading-relaxed">
                   <div
+                    className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: course.description }}
                   />
                 </article>
-
-                {/* Nút Xem thêm */}
-                <div className="mt-8 flex justify-end">
-                  <button className="text-[#0072BC] font-medium flex items-center gap-1 hover:underline text-sm">
-                    Xem thêm
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-                </div>
+              </div>
+            )}
+            {activeTab === "binhluan" && (
+              <div className="p-6 bg-white">
+                <LessonComments lessonId={course._id} />
               </div>
             )}
           </div>
@@ -184,13 +172,27 @@ export default function CourseDetailPage({
                 <input
                   type="text"
                   placeholder="Tìm kiếm bài học..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-[13px] focus:border-orange-400 outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
-              {course.sections?.map((section: any, sIdx: number) => (
+              {course.sections?.map((section: any, sIdx: number) => {
+                const filteredLessons = section.lessons?.filter((lesson: any) =>
+                  lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  (lesson.subtitle && lesson.subtitle.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+
+                if (searchQuery.trim() !== "" && (!filteredLessons || filteredLessons.length === 0)) {
+                  return null;
+                }
+
+                const isOpen = searchQuery.trim() !== "" || openSections.includes(sIdx);
+
+                return (
                 <div
                   key={sIdx}
                   className="border border-gray-200 rounded-md overflow-hidden"
@@ -201,7 +203,7 @@ export default function CourseDetailPage({
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`text-gray-500 transform transition-transform ${openSections.includes(sIdx) ? "rotate-180" : ""}`}
+                        className={`text-gray-500 transform transition-transform ${isOpen ? "rotate-180" : ""}`}
                       >
                         ▼
                       </span>
@@ -210,15 +212,15 @@ export default function CourseDetailPage({
                           {section.sectionTitle}
                         </h3>
                         <p className="text-[12px] text-gray-500">
-                          {section.lessons?.length || 0} bài học
+                          {filteredLessons?.length || 0} bài học
                         </p>
                       </div>
                     </div>
                   </button>
 
-                  {openSections.includes(sIdx) && (
+                  {isOpen && (
                     <div className="p-2 bg-white divide-y divide-gray-50">
-                      {section.lessons?.map((lesson: any, lIdx: number) => {
+                      {filteredLessons?.map((lesson: any, lIdx: number) => {
                         const hasPurchased = user?.courseBuyed && 
                           (user.courseBuyed.includes(course?._id) || user.courseBuyed.includes(course?.slug));
                         const showLockIcon = !lesson.isFree && !hasPurchased;
@@ -302,7 +304,7 @@ export default function CourseDetailPage({
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>
@@ -385,7 +387,7 @@ export default function CourseDetailPage({
                       MUA NGAY
                     </button>
                     <button className="w-full bg-[#f15a24] text-white font-bold py-2.5 rounded hover:bg-[#d94e1d] transition-colors text-sm">
-                      Kích hoạt khoá học
+                      Kích hạt khoá học
                     </button>
                   </>
                 )}
@@ -447,7 +449,7 @@ export default function CourseDetailPage({
 
       {/* Modal thông báo yêu cầu mua khóa học */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
             <p className="text-gray-600 mb-6">Bạn cần phải mua khóa học để xem tiếp video bài học này nhé.</p>
@@ -473,7 +475,7 @@ export default function CourseDetailPage({
       )}
       {/* Modal thông báo yêu cầu ĐĂNG NHẬP */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Yêu cầu đăng nhập</h3>
             <p className="text-gray-600 mb-6">Bạn cần đăng nhập để xem nội dung bài học tính phí.</p>

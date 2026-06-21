@@ -28,8 +28,14 @@ export interface CourseData {
 
 export const CourseService = {
   getAllCourses: async () => {
-    const response = await axiosClient.get('/course/get-all-courses');
-    return response.data;
+    try {
+      const response = await axiosClient.get('/course/get-all-courses');
+      return response.data;
+    } catch (error: any) {
+      console.error("CourseService.getAllCourses Error:", error.response?.data || error.message);
+      // Return empty array to prevent UI crash if API fails
+      return [];
+    }
   },
 
   createCourse: async (data: CourseData) => {

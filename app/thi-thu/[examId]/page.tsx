@@ -18,9 +18,11 @@ export default function ExamRoomPage() {
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
   const [activeQIndex, setActiveQIndex] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (!examId) return;
+    if (!examId || !user || (!user.id && !user._id)) return;
+    const studentId = user.id || user._id;
     const init = async () => {
       try {
         const resDetail = await ExamService.getExamDetail(examId);
@@ -31,14 +33,15 @@ export default function ExamRoomPage() {
         const exam = resDetail.data;
         setSelectedExam(exam);
 
-        const studentId = user.id || '65c2b8c56c2d1b827e8a93ef';
         const resAttempt = await ExamService.startAttempt({ examId, studentId });
         if (resAttempt.status === 'OK' && resAttempt.data) {
           const elapsed = (Date.now() - new Date(resAttempt.data.startedAt).getTime()) / 1000;
           if (elapsed < exam.duration * 60) {
+            // Khôi phục answers từ BE hoặc nếu không có thì {}
             setAnswers(resAttempt.data.answers || {});
             setCountdown(Math.floor(exam.duration * 60 - elapsed));
             setPhase('inProgress');
+            setIsInitialized(true);
           } else {
             alert('Thời gian làm bài của lượt thi này đã kết thúc.');
             router.push('/thi-thu');
@@ -51,7 +54,7 @@ export default function ExamRoomPage() {
       }
     };
     init();
-  }, [examId, user.id, router]);
+  }, [examId, user.id, user._id, router]);
 
   useEffect(() => {
     if (phase !== 'inProgress' || countdown <= 0) return;
@@ -69,10 +72,11 @@ export default function ExamRoomPage() {
   }, [phase, countdown]);
 
   useEffect(() => {
-    if (phase !== 'inProgress' || !selectedExam?._id) return;
-    const studentId = user.id || '65c2b8c56c2d1b827e8a93ef';
+    if (!isInitialized || phase !== 'inProgress' || !selectedExam?._id) return;
+    const studentId = user.id || user._id;
+    if (!studentId) return;
     ExamService.saveProgress({ examId: selectedExam._id!, studentId, studentAnswers: answers });
-  }, [answers, phase, selectedExam, user.id]);
+  }, [answers, phase, selectedExam, user.id, user._id, isInitialized]);
 
   const isThpt = (exam: ExamData) => exam.answers['13_a'] !== undefined || exam.answers['17'] !== undefined;
 
@@ -91,7 +95,9 @@ export default function ExamRoomPage() {
 
   const handleSubmit = async () => {
     if (!selectedExam?._id) return;
-    const studentId = user.id || '65c2b8c56c2d1b827e8a93ef';
+    const studentId = user.id || user._id;
+    if (!studentId) return;
+    
     try {
       const res = await ExamService.submitExam({ examId: selectedExam._id!, studentId, studentAnswers: answers });
       if (res.status === 'OK') {
@@ -151,81 +157,87 @@ export default function ExamRoomPage() {
               </div>           
             </div>
             {/* Right side: Interactive answer panel */}
-            <div className="w-[30%] bg-white flex flex-col justify-between overflow-y-auto border-l border-gray-150">
-              <div className="p-5 space-y-6">
-                <div className="bg-sky-50 border border-sky-100 p-4 rounded-xl text-sky-950">
-                  <div className="text-[10px] text-sky-800 font-bold uppercase tracking-wider">Thời gian còn lại</div>
-                  <div className="text-xl font-black mt-0.5">{formatCountdown(countdown)}</div>
+            <div className="w-[30%] bg-white flex flex-col justify-between overflow-y-auto border-l border-gray-200">
+              <div className="flex flex-col h-full">
+                {/* Header Timer */}
+                <div className="bg-[#1877f2] px-5 py-4 text-white shrink-0">
+                  <div className="text-sm font-medium">Thời gian còn lại</div>
+                  <div className="text-2xl font-bold mt-1">{formatCountdown(countdown)}</div>
                 </div>
 
-                <div className="border border-gray-100 p-3 rounded-xl flex items-center gap-3 bg-slate-50">
-                  <span className="text-2xl">📕</span>
-                  <div className="truncate">
-                    <div className="font-extrabold text-xs text-gray-900 truncate">{selectedExam.title}</div>
+                <div className="p-5 flex flex-col gap-6 flex-grow overflow-y-auto">
+                  {/* PDF File Title Box */}
+                  <div className="border border-gray-200 shadow-sm p-4 rounded-lg flex items-center gap-3 bg-white shrink-0">
+                    <div className="bg-red-600 text-white text-[11px] font-bold px-2 py-1 rounded shadow-sm shrink-0">PDF</div>
+                    <div className="font-bold text-sm text-gray-900 truncate">{selectedExam.title}</div>
                   </div>
-                </div>
 
-                <div className="border-b pb-3">
-                  <div className="text-sm font-black text-gray-900">{activeQ.label} ({activeQ.pts} điểm):</div>
-                  <div className="text-[10px] text-gray-400 font-semibold mt-0.5">Nhập đáp án để trả lời</div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-center">Phiếu trả lời</div>
-                  <div className="grid grid-cols-7 gap-2 max-h-[170px] overflow-y-auto p-1 bg-gray-50 border rounded-xl">
-                    {qList.map((q, idx) => (
-                      <button
-                        key={q.id}
-                        onClick={() => setActiveQIndex(idx + 1)}
-                        className={`py-2 rounded font-bold text-center border text-[10px] transition-all truncate px-0.5 ${activeQIndex === idx + 1 ? 'border-2 border-blue-600 bg-white text-blue-700 shadow-sm' : isThpt(selectedExam) && q.type === 'true_false' && ['a','b','c','d'].some(s => answers[`${q.id}_${s}`]) ? 'bg-blue-50 text-blue-700 border-blue-100' : answers[q.id] ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-white hover:bg-gray-100 text-gray-600 border-gray-200'}`}
-                      >
-                        {getCellLabel(q)}
-                      </button>
-                    ))}
+                  {/* Question Info */}
+                  <div className="shrink-0">
+                    <div className="text-[15px] font-bold text-gray-900">{activeQ.label} ({activeQ.pts} điểm):</div>
+                    <div className="text-sm text-gray-600 mt-0.5">Nhập đáp án để trả lời</div>
                   </div>
-                </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-gray-100 space-y-4">
-                  {activeQ.type === 'choice' && (
-                    <>
-                      <input type="text" readOnly value={`Đáp án câu ${activeQIndex}: ${answers[activeQ.id] || 'Chưa chọn'}`} className="w-full bg-white border p-2 rounded-lg font-bold text-center text-xs text-gray-700 focus:outline-none" />
-                      <div className="grid grid-cols-4 gap-2">
-                        {['A','B','C','D'].map(o => (
-                          <button key={o} onClick={() => { setAnswers(p => ({ ...p, [activeQ.id]: o })); if (activeQIndex < qList.length) setActiveQIndex(activeQIndex + 1); }} className={`py-3 rounded-lg font-black border transition-all text-xs ${answers[activeQ.id] === o ? 'bg-blue-600 text-white border-transparent shadow-sm' : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'}`}>{o}</button>
-                        ))}
+                  {/* Answer Sheet Grid */}
+                  <div className="flex flex-col shrink-0">
+                    <div className="text-[15px] text-gray-800 font-bold text-center mb-4">Phiếu trả lời</div>
+                    <div className="grid grid-cols-7 gap-2.5 max-h-[300px] overflow-y-auto pb-2 px-1">
+                      {qList.map((q, idx) => (
+                        <button
+                          key={q.id}
+                          onClick={() => setActiveQIndex(idx + 1)}
+                          className={`py-2 rounded font-medium text-center border text-[13px] transition-all truncate px-0.5 ${activeQIndex === idx + 1 ? 'border-[1.5px] border-[#1877f2] bg-white text-[#1877f2]' : isThpt(selectedExam) && q.type === 'true_false' && ['a','b','c','d'].some(s => answers[`${q.id}_${s}`]) ? 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]' : answers[q.id] ? 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'}`}
+                        >
+                          {getCellLabel(q)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Inputs */}
+                  <div className="mt-auto pt-4 shrink-0">
+                    {activeQ.type === 'choice' && (
+                      <div className="space-y-4">
+                        <input type="text" readOnly placeholder={`Đáp án câu ${activeQIndex}: A, B, C, D...`} value={answers[activeQ.id] ? `Đáp án câu ${activeQIndex}: ${answers[activeQ.id]}` : ''} className="w-full bg-white border border-gray-300 px-4 py-3 rounded-lg text-sm text-gray-500 font-medium focus:outline-none" />
+                        <div className="grid grid-cols-4 gap-3">
+                          {['A','B','C','D'].map(o => (
+                            <button key={o} onClick={() => { setAnswers(p => ({ ...p, [activeQ.id]: o })); if (activeQIndex < qList.length) setActiveQIndex(activeQIndex + 1); }} className={`py-2.5 rounded-lg font-bold border transition-all text-sm ${answers[activeQ.id] === o ? 'bg-[#1877f2] text-white border-[#1877f2]' : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'}`}>{o}</button>
+                          ))}
+                        </div>
                       </div>
-                    </>
-                  )}
+                    )}
 
-                  {activeQ.type === 'true_false' && (
-                    <div className="space-y-3">
-                      {activeQ.sub?.map((s: string) => {
-                        const key = `${activeQ.id}_${s}`;
-                        return (
-                          <div key={s} className="flex justify-between items-center bg-white p-2 rounded border border-gray-100">
-                            <span className="font-bold text-gray-500 uppercase">Ý {s})</span>
-                            <div className="flex gap-2">
-                              {['Đúng', 'Sai'].map(val => (
-                                <button key={val} onClick={() => setAnswers(p => ({ ...p, [key]: val }))} className={`px-4 py-1.5 rounded-lg text-[10px] font-extrabold border transition-all ${answers[key] === val ? 'bg-blue-600 text-white border-transparent' : 'bg-slate-50 text-gray-600 hover:bg-slate-100 border-gray-200'}`}>{val}</button>
-                              ))}
+                    {activeQ.type === 'true_false' && (
+                      <div className="space-y-3">
+                        {activeQ.sub?.map((s: string) => {
+                          const key = `${activeQ.id}_${s}`;
+                          return (
+                            <div key={s} className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-300">
+                              <span className="font-bold text-gray-600 uppercase">Ý {s})</span>
+                              <div className="flex gap-2">
+                                {['Đúng', 'Sai'].map(val => (
+                                  <button key={val} onClick={() => setAnswers(p => ({ ...p, [key]: val }))} className={`px-5 py-2 rounded-lg text-sm font-bold border transition-all ${answers[key] === val ? 'bg-[#1877f2] text-white border-[#1877f2]' : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-300'}`}>{val}</button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    )}
 
-                  {activeQ.type === 'short' && (
-                    <div className="space-y-2">
-                      <input type="text" placeholder="Nhập đáp số trắc nghiệm" value={answers[activeQ.id] || ''} onChange={(e) => setAnswers(p => ({ ...p, [activeQ.id]: e.target.value }))} className="w-full bg-white border p-2.5 rounded-lg font-extrabold text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-600" />
-                    </div>
-                  )}
+                    {activeQ.type === 'short' && (
+                      <div className="space-y-2 mt-2">
+                        <input type="text" placeholder="Nhập đáp số trắc nghiệm" value={answers[activeQ.id] || ''} onChange={(e) => setAnswers(p => ({ ...p, [activeQ.id]: e.target.value }))} className="w-full bg-white border border-gray-300 p-3 rounded-lg font-bold text-center text-sm focus:outline-none focus:ring-2 focus:ring-[#1877f2] focus:border-transparent" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-5 border-t border-gray-150 grid grid-cols-2 gap-3 bg-slate-50 shrink-0">
-                <button onClick={() => { if(confirm('Rời khỏi phòng thi? Tiến trình làm bài sẽ được lưu.')) router.push('/thi-thu'); }} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold py-3.5 rounded-xl text-center transition-all shadow-xs">Rời khỏi</button>
-                <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-xl text-center transition-all shadow-md">Nộp bài</button>
+                {/* Footer Buttons */}
+                <div className="p-5 border-t border-gray-200 grid grid-cols-[1fr_2fr] gap-3 bg-white shrink-0">
+                  <button onClick={() => { if(confirm('Rời khỏi phòng thi? Tiến trình làm bài sẽ được lưu.')) router.push('/thi-thu'); }} className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] font-bold py-3 rounded-lg text-center transition-all">Rời khỏi</button>
+                  <button onClick={handleSubmit} className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold py-3 rounded-lg text-center transition-all">Nộp bài</button>
+                </div>
               </div>
             </div>
           </div>

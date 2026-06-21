@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import { ExamService, ExamData } from '@/services/ExamService';
 import { useSelector } from 'react-redux';
 import Link from 'next/link';
+import LoginModal from '@/components/auth/LoginModal';
 
 // --- INLINE SVG ICONS ---
 const ExamIcon = ({ size = 18 }) => (
@@ -68,19 +69,37 @@ export default function MockExamPage() {
   const [violations, setViolations] = useState(0);
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
   const [historySubmissions, setHistorySubmissions] = useState<any[]>([]);
+  
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleExamClick = (e: React.MouseEvent) => {
+    if (!user || (!user.id && !user._id)) {
+      e.preventDefault();
+      setShowLoginModal(true);
+    }
+  };
 
   useEffect(() => {
+    setIsLoading(true);
     ExamService.getAllExams().then(res => {
       if (res.status === 'OK') setExams(res.data || []);
-    });
+    }).catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
 
   const fetchHistory = () => {
     const studentId = user?._id || user?.id;
     if (studentId) {
+      setIsHistoryLoading(true);
       ExamService.getStudentSubmissions(studentId).then(res => {
         if (res.status === 'OK') setHistorySubmissions(res.data || []);
-      });
+      }).catch(err => console.error(err))
+        .finally(() => setIsHistoryLoading(false));
+    } else {
+      setIsHistoryLoading(false);
     }
   };
 
@@ -271,16 +290,6 @@ export default function MockExamPage() {
                 <ChevronRight size={14} />
                 <span className="text-gray-800 font-bold">{sectionTitles[activeTab]}</span>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 font-bold">Hi, {studentName}</span>
-                <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
-                  <Bell size={20} />
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white"></span>
-                </button>
-                <div className="w-8 h-8 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-xs">
-                  {getInitial(studentName)}
-                </div>
-              </div>
             </header>
 
             {/* Dashboard Content */}
@@ -291,7 +300,22 @@ export default function MockExamPage() {
                   <h3 className="font-bold text-base text-gray-900 mb-4">
                     Lịch sử bài làm của bạn
                   </h3>
-                  {historySubmissions.length === 0 ? (
+                  {(!user || (!user.id && !user._id)) ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-450 font-medium mb-4">Vui lòng đăng nhập để xem lịch sử bài làm.</p>
+                      <button 
+                        onClick={() => setShowLoginModal(true)}
+                        className="bg-[#1e3a8a] text-white px-6 py-2.5 rounded-full font-bold hover:bg-[#fbbf24] hover:text-[#1e3a8a] transition-all"
+                      >
+                        Đăng nhập ngay
+                      </button>
+                    </div>
+                  ) : isHistoryLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <div className="w-12 h-12 border-4 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="mt-4 text-[#1e3a8a] font-bold">Đang tải lịch sử bài làm...</p>
+                    </div>
+                  ) : historySubmissions.filter(s => s.status === 'completed').length === 0 ? (
                     <div className="text-center py-12 text-gray-450 font-medium">Bạn chưa thực hiện nộp bài thi hay bài tập nào.</div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -306,7 +330,7 @@ export default function MockExamPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {historySubmissions.map((sub) => (
+                          {historySubmissions.filter(s => s.status === 'completed').map((sub) => (
                             <tr key={sub._id} className="hover:bg-gray-50/50">
                               <td className="py-3.5 pl-3 font-semibold text-[#1e3a8a]">{sub.examId?.title}</td>
                               <td className="py-3.5 text-gray-500 font-medium">Lớp {sub.examId?.grade || 12}</td>
@@ -334,7 +358,12 @@ export default function MockExamPage() {
                       Danh sách học liệu sẵn có ({filteredExams.length})
                     </h2>
                   </div>
-                  {filteredExams.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-200 rounded-2xl">
+                      <div className="w-12 h-12 border-4 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="mt-4 text-[#1e3a8a] font-bold">Đang tải danh sách học liệu...</p>
+                    </div>
+                  ) : filteredExams.length === 0 ? (
                     <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl text-gray-400 font-semibold">
                       Chưa có đề thi hoặc bài tập nào được phân phối cho thẻ này.
                     </div>
@@ -370,6 +399,7 @@ export default function MockExamPage() {
                                 </div>
                                 <Link
                                   href={`/thi-thu/${exam._id}`}
+                                  onClick={handleExamClick}
                                   className="w-full mt-2 bg-gray-500 hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 rounded-xl transition-all text-center block"
                                 >
                                   Làm lại
@@ -378,6 +408,7 @@ export default function MockExamPage() {
                             ) : (
                               <Link
                                 href={`/thi-thu/${exam._id}`}
+                                onClick={handleExamClick}
                                 className="w-full mt-5 bg-[#1e3a8a] hover:bg-[#fbbf24] hover:text-[#1e3a8a] text-white font-bold py-2.5 rounded-xl transition-all text-center block"
                               >
                                 Bắt đầu làm bài
@@ -575,6 +606,39 @@ export default function MockExamPage() {
           </div>
         </div>
       )}
+
+      {/* Modal thông báo yêu cầu ĐĂNG NHẬP */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Yêu cầu đăng nhập</h3>
+            <p className="text-gray-600 mb-6">Bạn cần đăng nhập để tham gia làm bài thi và bài tập trên hệ thống.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setShowLoginModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium transition-colors"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setIsLoginModalOpen(true); 
+                }}
+                className="px-4 py-2 bg-[#1e3a8a] text-white rounded hover:bg-[#005a96] font-medium transition-colors"
+              >
+                Đăng nhập ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal từ components */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </div>
   );
 }

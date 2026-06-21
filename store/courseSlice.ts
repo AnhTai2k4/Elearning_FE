@@ -12,6 +12,7 @@ interface Course {
     grade?: number;
     tags?: string[];
     releaseDate?: string;
+    overview?: string;
 }
 
 interface CourseState {

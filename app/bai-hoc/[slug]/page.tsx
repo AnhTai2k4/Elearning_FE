@@ -6,8 +6,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import LoginModal from '@/components/auth/LoginModal';
-import { markLessonComplete } from '@/store/userSlice';
 import { UserService } from '@/services/UserService';
+import { CommentService } from '@/services/CommentService';
 import LessonComments from '@/components/lesson/LessonComments';
 
 export default function LessonDetailPage({ 
@@ -38,6 +38,10 @@ export default function LessonDetailPage({
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [initialComments, setInitialComments] = useState<any[]>([]);
+  const [initialTotal, setInitialTotal] = useState(0);
+  const [initialHasMore, setInitialHasMore] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -56,14 +60,23 @@ export default function LessonDetailPage({
         if (!response.ok) {
           throw new Error('Không tìm thấy bài học');
         }
-        
         const data = await response.json();
         setLesson(data);
 
-        const courseResponse = await fetch(`${apiBase}/course/get-course/${encodeURIComponent(courseSlug)}`);
+        const [courseResponse, commentsData] = await Promise.all([
+          fetch(`${apiBase}/course/get-course/${encodeURIComponent(courseSlug)}`),
+          CommentService.getCommentsByLesson(data._id, 1, 5).catch(() => null)
+        ]);
+
         if (courseResponse.ok) {
           const courseData = await courseResponse.json();
           setCourse(courseData);
+        }
+
+        if (commentsData && commentsData.success) {
+          setInitialComments(commentsData.data);
+          setInitialTotal(commentsData.total);
+          setInitialHasMore(commentsData.hasMore);
         }
       } catch (err: any) {
         setError(err.message);
@@ -285,7 +298,12 @@ export default function LessonDetailPage({
         {/* ================= CỘT PHẢI: SIDEBAR ================= */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           {/* COMMENT SECTION */}
-          <LessonComments lessonId={lesson._id} />
+          <LessonComments 
+            lessonId={lesson._id} 
+            initialComments={initialComments}
+            initialTotal={initialTotal}
+            initialHasMore={initialHasMore}
+          />
           <div className="bg-white rounded shadow-sm border border-gray-200 p-2 flex flex-col">
             {/* Danh sách Playlist */}
             <div className="overflow-y-auto flex-grow p-2 space-y-1 mt-2">
@@ -375,7 +393,7 @@ export default function LessonDetailPage({
 
       {/* Modal thông báo yêu cầu mua khóa học */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
             <p className="text-gray-600 mb-6">Bạn cần phải mua khóa học để xem tiếp video bài học này nhé.</p>
@@ -402,7 +420,7 @@ export default function LessonDetailPage({
 
       {/* Modal thông báo yêu cầu ĐĂNG NHẬP */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
             <p className="text-gray-600 mb-6">Bạn cần đăng nhập để học tiếp bài học này nhé.</p>

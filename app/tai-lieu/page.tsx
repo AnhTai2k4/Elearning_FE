@@ -58,6 +58,7 @@ export default function DocumentPage() {
 
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'grade-10' | 'grade-11' | 'grade-12' | 'upload'>('all');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Upload form state
   const [uploadTitle, setUploadTitle] = useState('');
@@ -68,12 +69,15 @@ export default function DocumentPage() {
 
   const fetchDocuments = async () => {
     try {
+      setIsLoading(true);
       const res = await DocumentService.getAllDocuments();
       if (res.status === 'OK') {
         setDocuments(res.data || []);
       }
     } catch (err) {
       console.error('Error fetching documents:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -232,16 +236,6 @@ export default function DocumentPage() {
                 <ChevronRight size={14} />
                 <span className="text-gray-800 font-bold">{tabLabels[activeTab]}</span>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600 font-bold">Hi, {studentName}</span>
-                <button className="relative text-gray-400 hover:text-gray-600 transition-colors">
-                  <Bell size={20} />
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white"></span>
-                </button>
-                <div className="w-8 h-8 rounded-full bg-[#7E96A0] text-white flex items-center justify-center font-bold text-xs">
-                  {getInitial(studentName)}
-                </div>
-              </div>
             </header>
 
             {/* Dashboard Content */}
@@ -251,7 +245,12 @@ export default function DocumentPage() {
                   <h2 className="text-base font-bold text-gray-900 mb-4">
                     Học liệu thư viện hiện tại ({filteredDocs.length})
                   </h2>
-                  {filteredDocs.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                      <div className="w-12 h-12 border-4 border-[#1e3a8a] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="mt-4 text-[#1e3a8a] font-bold">Đang tải tài liệu...</p>
+                    </div>
+                  ) : filteredDocs.length === 0 ? (
                     <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl text-gray-400 font-semibold">
                       Chưa có tài liệu học tập nào trong mục này.
                     </div>

@@ -35,17 +35,27 @@ const CommentText = ({ content }: { content: string }) => {
   );
 };
 
-export default function LessonComments({ lessonId }: { lessonId: string }) {
+export default function LessonComments({ 
+  lessonId, 
+  initialComments = [],
+  initialTotal = 0,
+  initialHasMore = false
+}: { 
+  lessonId: string, 
+  initialComments?: CommentType[],
+  initialTotal?: number,
+  initialHasMore?: boolean
+}) {
   const user = useSelector((state: any) => state.user);
-  const [comments, setComments] = useState<CommentType[]>([]);
+  const [comments, setComments] = useState<CommentType[]>(initialComments);
   const [newComment, setNewComment] = useState("");
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [total, setTotal] = useState(initialTotal);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchComments = async (pageNum = 1, shouldAppend = false) => {
@@ -73,10 +83,16 @@ export default function LessonComments({ lessonId }: { lessonId: string }) {
 
   useEffect(() => {
     if (lessonId) {
-      setPage(1);
-      fetchComments(1, false);
+      if (initialComments.length === 0 && comments.length === 0) {
+        setPage(1);
+        fetchComments(1, false);
+      } else {
+        setComments(initialComments);
+        setTotal(initialTotal);
+        setHasMore(initialHasMore);
+      }
     }
-  }, [lessonId]);
+  }, [lessonId, initialComments, initialTotal, initialHasMore]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

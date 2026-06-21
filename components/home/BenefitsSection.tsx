@@ -41,7 +41,7 @@ export default function BenefitsSection() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="/bg.jpg" 
+          src="\images\math_assets\bg.jpg" 
           alt="Background" 
           className="w-full h-full object-cover"
         />

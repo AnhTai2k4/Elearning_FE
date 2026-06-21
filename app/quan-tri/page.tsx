@@ -117,8 +117,8 @@ export default function AdminPortal() {
       if (transactionsRes && Array.isArray(transactionsRes.data)) {
         setDbTransactions(transactionsRes.data);
       }
-    } catch (err) {
-      console.error('Error fetching admin dashboard data:', err);
+    } catch (err: any) {
+      console.error('Error fetching admin dashboard data:', err.message || err);
     } finally {
       setLoading(false);
     }
