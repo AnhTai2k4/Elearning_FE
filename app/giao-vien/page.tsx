@@ -89,7 +89,7 @@ const menuItems: MenuItem[] = [
   { id: "courses", label: "Quản lý khóa học", icon: <BookOpen size={18} /> },
   { id: "exams", label: "Quản lý Đề thi & BT", icon: <FileText size={18} /> },
   { id: "docs", label: "Đăng tải tài liệu", icon: <FileUp size={18} /> },
-  { id: "stats", label: "Thống kê & Cảnh báo", icon: <BarChart2 size={18} /> },
+  
 ];
 
 
@@ -261,7 +261,7 @@ export default function TeacherPage() {
           </div>
 
           {/* Page content */}
-          <div className="p-6 flex-1 min-h-0">
+          <div className="p-3 flex-1 min-h-0">
             {activeMenu === "review" && (
               <TeacherReviews
                 plans={plans}

@@ -137,7 +137,7 @@ export default function MockExamPage() {
     return () => window.removeEventListener('blur', handleBlur);
   }, [phase]);
 
-  const isThpt = (exam: ExamData) => exam.answers['13_a'] !== undefined || exam.answers['17'] !== undefined;
+  const isThpt = (exam: ExamData) => exam?.answers?.['13_a'] !== undefined || exam?.answers?.['17'] !== undefined;
 
   const getQuestionsList = (exam: ExamData) => {
     const list = [];
@@ -337,12 +337,12 @@ export default function MockExamPage() {
                               <td className="py-3.5 text-center text-gray-500">{new Date(sub.completedAt).toLocaleDateString('vi-VN')}</td>
                               <td className="py-3.5 text-right font-black text-emerald-600">{sub.score} / 10</td>
                               <td className="py-3.5 text-center">
-                                <button
-                                  onClick={() => { setSelectedExam(sub.examId); setSubmissionResult(sub); setPhase('review'); }}
-                                  className="px-4 py-2 bg-[#1e3a8a]/10 text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white rounded-full font-bold transition-all text-xs"
+                                <Link
+                                  href={`/thi-thu/${sub.examId._id}?review=true`}
+                                  className="inline-block px-4 py-2 bg-[#1e3a8a]/10 text-[#1e3a8a] hover:bg-[#1e3a8a] hover:text-white rounded-full font-bold transition-all text-xs"
                                 >
                                   Xem lại bài làm
-                                </button>
+                                </Link>
                               </td>
                             </tr>
                           ))}

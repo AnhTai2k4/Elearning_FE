@@ -321,19 +321,29 @@ export default function DayPlan({
             <div className="bg-white border border-green-100 rounded-2xl p-6 shadow-sm ring-1 ring-green-50/50">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl shrink-0 font-bold text-green-700">
-                  H
+                  👨‍🏫
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-800 text-[15px]">Giáo viên nhận xét</h3>
-                  {initialPlan.teacherCommentAt && (
-                    <p className="text-[12px] text-gray-500">
-                      Đã nhận xét lúc {new Date(initialPlan.teacherCommentAt).toLocaleTimeString()} ngày {new Date(initialPlan.teacherCommentAt).toLocaleDateString()}
-                    </p>
-                  )}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-[15px]">Giáo viên nhận xét</h3>
+                      {initialPlan.teacherCommentAt && (
+                        <p className="text-[12px] text-gray-500 mt-0.5">
+                          Đã nhận xét lúc {new Date(initialPlan.teacherCommentAt).toLocaleTimeString('vi-VN')} ngày {new Date(initialPlan.teacherCommentAt).toLocaleDateString('vi-VN')}
+                        </p>
+                      )}
+                    </div>
+                    {initialPlan.teacherScore !== undefined && (
+                      <div className="bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 text-center shrink-0">
+                        <span className="block text-[10px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Điểm kỷ luật</span>
+                        <span className="block text-lg font-black text-green-700 leading-none">{initialPlan.teacherScore}/10</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              <div className="text-[14px] text-gray-700 leading-relaxed bg-green-50/50 p-5 rounded-xl border-l-4 border-green-500">
+              <div className="text-[14px] text-gray-700 leading-relaxed bg-green-50/50 p-5 rounded-xl border-l-4 border-green-500 whitespace-pre-wrap mt-2">
                 "{initialPlan.teacherComment}"
               </div>
             </div>

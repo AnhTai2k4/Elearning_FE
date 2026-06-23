@@ -88,16 +88,22 @@ export default function DocumentDetailPage() {
       </div>
       
       {/* PDF Viewer Frame */}
-      <div className="flex-1 bg-slate-950 p-4 flex justify-center items-center">
-        {selectedDoc.fileUrl ? (
-          <iframe
-            src={selectedDoc.fileUrl}
-            className="w-full max-w-5xl h-full rounded-2xl border border-slate-800 shadow-2xl bg-white"
-            title={selectedDoc.title}
-          />
-        ) : (
-          <div className="text-center text-gray-400">Không tìm thấy liên kết tệp tài liệu.</div>
-        )}
+      <div className="flex-1 bg-[#525659] flex flex-col relative">
+        <div className="absolute inset-0 bg-[#525659]">
+          {selectedDoc.fileUrl ? (
+            <iframe
+              src={`${selectedDoc.fileUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+              className="w-full h-full border-none shadow-xl"
+              style={{ 
+                display: 'block',
+                backgroundColor: 'white'
+              }}
+              title={selectedDoc.title}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-300 font-bold text-sm">📄 Không có tệp xem trước tài liệu.</div>
+          )}
+        </div>
       </div>
     </div>
   );

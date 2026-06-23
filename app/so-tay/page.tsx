@@ -218,19 +218,20 @@ export default function NotebookPage() {
   const calendarDays = getCalendarDays();
 
   // Statistics values
-  const plannedDaysCount = Object.values(markedDays).filter(v => v === 'completed').length;
-  const completedWeeks = plannedDaysCount >= 4 ? 1 : 0;
+  const plannedDaysCount = Object.values(markedDays).filter(v => v === 'planned' || v === 'completed' || v === 'reviewed').length;
+  const reviewedDaysCount = Object.values(markedDays).filter(v => v === 'reviewed').length;
   const totalHours = Object.values(dayPlans)
     .filter(plan => plan.status === 'submitted' || plan.status === 'reviewed')
     .reduce((sum, plan) => {
       const planSum = plan.rows.reduce((acc, row) => acc + (Number(row.actualTime) || 0), 0);
       return sum + planSum;
     }, 0);
-  const submittedPlans = Object.values(dayPlans).filter(
-    plan => plan.status === 'submitted' || plan.status === 'reviewed'
+  
+  const reviewedPlansWithScore = Object.values(dayPlans).filter(
+    plan => plan.status === 'reviewed' && plan.teacherScore !== undefined
   );
-  const disciplineScore = submittedPlans.length > 0
-    ? (submittedPlans.reduce((sum, plan) => sum + (plan.selfScore ?? 10), 0) / submittedPlans.length).toFixed(1)
+  const disciplineScore = reviewedPlansWithScore.length > 0
+    ? (reviewedPlansWithScore.reduce((sum, plan) => sum + plan.teacherScore!, 0) / reviewedPlansWithScore.length).toFixed(1)
     : '0';
 
   return (
@@ -260,7 +261,7 @@ export default function NotebookPage() {
             </div>
           </div>
 
-          {/* Card 2: Tuần hoàn thành mục tiêu */}
+          {/* Card 2: Ngày giáo viên đã nhận xét */}
           <div className="bg-[#f0edff]/50 rounded-2xl p-5 flex items-center gap-4 border border-purple-100/50 shadow-sm">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-purple-500 shadow-sm shrink-0">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -268,8 +269,8 @@ export default function NotebookPage() {
               </svg>
             </div>
             <div>
-              <p className="text-3xl font-black text-purple-600 leading-none mb-1">{completedWeeks}</p>
-              <p className="text-[12px] text-gray-500 font-medium">Tuần hoàn thành mục tiêu</p>
+              <p className="text-3xl font-black text-purple-600 leading-none mb-1">{reviewedDaysCount}</p>
+              <p className="text-[12px] text-gray-500 font-medium">Ngày giáo viên đã nhận xét</p>
             </div>
           </div>
 
@@ -390,7 +391,7 @@ export default function NotebookPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded border border-green-500 bg-green-50/30"></div>
-                  <span>Đã hoàn thành</span>
+                  <span>Đã nộp GV</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded border border-blue-300 bg-blue-50/20"></div>
@@ -412,7 +413,7 @@ export default function NotebookPage() {
                   }}
                   className="w-full mt-5 bg-[#0072BC] hover:bg-[#005e9c] text-white font-bold text-[13px] py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-sm transition-all"
                 >
-                  {(markedDays[selectedDay] === 'completed' || markedDays[selectedDay] === 'planned') ? 'Xem kế hoạch hôm nay' : 'Lập kế hoạch ngày hôm nay'}{' '}
+                  {(markedDays[selectedDay] === 'completed' || markedDays[selectedDay] === 'planned' || markedDays[selectedDay] === 'reviewed') ? 'Xem kế hoạch hôm nay' : 'Lập kế hoạch ngày hôm nay'}{' '}
                   <span className="text-base leading-none">→</span>
                 </button>
               )}

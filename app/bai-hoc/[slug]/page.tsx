@@ -9,6 +9,7 @@ import LoginModal from '@/components/auth/LoginModal';
 import { UserService } from '@/services/UserService';
 import { CommentService } from '@/services/CommentService';
 import LessonComments from '@/components/lesson/LessonComments';
+import { markLessonComplete } from '@/store/userSlice';
 
 export default function LessonDetailPage({ 
   params,
@@ -104,13 +105,15 @@ export default function LessonDetailPage({
     const subscribeToPlayer = () => {
       const iframe = document.getElementById('bunny-player') as HTMLIFrameElement;
       if (iframe && iframe.contentWindow) {
-        // Chuẩn Player.js yêu cầu trường "listener"
-        iframe.contentWindow.postMessage(JSON.stringify({
+        // Gửi cả 2 định dạng phổ biến để ép Bunny stream phản hồi
+        const payload = JSON.stringify({
           context: 'player.js',
           method: 'addEventListener',
           value: 'timeupdate',
           listener: 'timeupdate-listener'
-        }), '*');
+        });
+        console.log('[Gửi Ping tới iframe]:', payload);
+        iframe.contentWindow.postMessage(payload, '*');
       }
     };
 
@@ -119,15 +122,28 @@ export default function LessonDetailPage({
     const handleMessage = async (e: MessageEvent) => {
       try {
         if (!e.data) return;
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         
-        // Bỏ qua các message rác của React
-        if (!data.event) return;
+        // --- LOG TẤT CẢ MESSAGE (loại trừ React/Webpack) ---
+        if (typeof e.data === 'string' && (e.data.includes('webpack') || e.data.includes('react'))) return;
+        if (e.data && e.data.source === '@devtools-page') return;
+        if (e.data && e.data.type && typeof e.data.type === 'string' && e.data.type.includes('webpack')) return;
+        
+        console.log('[Tất cả Message nhận được]:', e.origin, e.data);
+        // ----------------------------------------------------
 
-        // Nếu nhận được event từ Bunny Player thì log ra để dễ debug
-        if (e.origin.includes('mediadelivery.net') || data.context === 'player.js') {
-           console.log('[Bunny Player Event]:', data.event, data);
+        let data = e.data;
+        if (typeof e.data === 'string') {
+          try {
+            data = JSON.parse(e.data);
+          } catch (parseErr) {
+            return; 
+          }
         }
+        
+        if (!data) return;
+
+        // Log tất cả event có cấu trúc của player để debug
+        console.log('[Parsed Player Event]:', data.event, data);
         
         // Nếu nhận được bất kỳ event timeupdate nào thì dừng việc ping
         if (data.event === 'timeupdate') {
@@ -140,6 +156,8 @@ export default function LessonDetailPage({
           if (!duration && lesson.duration) {
             duration = parseInt(lesson.duration) * 60;
           }
+
+          console.log("duration",duration);
 
           if (duration > 0) {
             // Log tiến độ để debug
@@ -159,7 +177,7 @@ export default function LessonDetailPage({
           }
         }
       } catch (err) {
-        // Bỏ qua lỗi JSON parse
+        console.error('[Bunny Player] Lỗi xử lý event:', err);
       }
     };
 

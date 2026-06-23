@@ -64,6 +64,7 @@ const ChevronRight = ({ size = 18 }) => (
 );
 
 interface Transaction {
+  _id: string;
   id: string;
   student: string;
   method: 'VNPay' | 'MoMo';
@@ -169,13 +170,31 @@ export default function AdminPortal() {
   };
 
   // --- STATS COMPUTING ---
+  // Derive course purchases strictly from successful transactions to ensure consistency
+  const studentPurchasesMap: Record<string, number> = {};
+  const coursePurchasesMap: Record<string, number> = {};
+
+  dbTransactions.forEach(tx => {
+    if (tx.status === 'Thành công') {
+      const sId = tx.user ? (tx.user._id || tx.user) : null;
+      const cId = tx.course ? (tx.course._id || tx.course) : null;
+      
+      if (sId) {
+        studentPurchasesMap[sId as string] = (studentPurchasesMap[sId as string] || 0) + 1;
+      }
+      if (cId) {
+        coursePurchasesMap[cId as string] = (coursePurchasesMap[cId as string] || 0) + 1;
+      }
+    }
+  });
+
   const coursesMap: Record<string, CourseData> = {};
   courses.forEach(c => {
     if (c._id) coursesMap[c._id] = c;
   });
 
   const studentsList = users.filter(u => !u.isTeacher && !u.isAdmin);
-  const activeStudentsCount = studentsList.filter(u => u.courseBuyed && u.courseBuyed.length > 0).length;
+  const activeStudentsCount = studentsList.filter(u => studentPurchasesMap[u._id!] > 0).length;
 
   let totalLessonsCount = 0;
   courses.forEach(c => {
@@ -196,6 +215,7 @@ export default function AdminPortal() {
       totalRevenue += tx.amount;
     }
     return {
+      _id: tx._id,
       id: tx.orderId || `#TX${tx._id.substring(18).toUpperCase()}`,
       student: tx.user ? tx.user.name : 'Khách vãng lai',
       method: tx.method as 'MoMo' | 'VNPay',
@@ -457,7 +477,7 @@ export default function AdminPortal() {
                             </thead>
                             <tbody className="divide-y divide-gray-55">
                               {transactions.slice(0, 5).map((tx) => (
-                                <tr key={tx.id} className="hover:bg-gray-50/50">
+                                <tr key={tx._id} className="hover:bg-gray-50/50">
                                   <td className="py-3 font-bold text-gray-900">{tx.id}</td>
                                   <td className="py-3 font-bold text-gray-700">{tx.student}</td>
                                   <td className="py-3">
@@ -507,7 +527,7 @@ export default function AdminPortal() {
                                 <td className="py-3.5 text-gray-500">
                                   {st.createdAt ? new Date(st.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                                 </td>
-                                <td className="py-3.5 text-center font-extrabold text-gray-700">{st.courseBuyed?.length || 0}</td>
+                                <td className="py-3.5 text-center font-extrabold text-gray-700">{studentPurchasesMap[st._id!] || 0}</td>
                                 <td className="py-3.5 text-center">
                                   <span className={`px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700`}>
                                     Hoạt động
@@ -534,7 +554,7 @@ export default function AdminPortal() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {courses.map(course => {
-                          const purchasesCount = users.filter(u => u.courseBuyed && u.courseBuyed.includes(course._id!)).length;
+                          const purchasesCount = coursePurchasesMap[course._id!] || 0;
                           return (
                             <div key={course._id} className="border border-gray-150 p-4 rounded-xl space-y-2 hover:shadow-sm transition-all bg-slate-50/50">
                               <div className="flex justify-between items-center">
@@ -576,7 +596,7 @@ export default function AdminPortal() {
                             {transactions
                               .filter(tx => tx.student.toLowerCase().includes(searchTerm.toLowerCase()) || tx.id.toLowerCase().includes(searchTerm.toLowerCase()))
                               .map((tx) => (
-                                <tr key={tx.id} className="hover:bg-gray-50/50">
+                                <tr key={tx._id} className="hover:bg-gray-50/50">
                                   <td className="py-3.5 font-bold text-gray-900">{tx.id}</td>
                                   <td className="py-3.5 font-bold text-gray-800">{tx.student}</td>
                                   <td className="py-3.5 text-gray-500">{tx.date}</td>

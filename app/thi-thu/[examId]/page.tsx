@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ExamService, ExamData } from '@/services/ExamService';
 import { useSelector } from 'react-redux';
 import Header from '@/components/layout/Header';
@@ -9,10 +9,12 @@ import Header from '@/components/layout/Header';
 export default function ExamRoomPage() {
   const { examId } = useParams() as { examId: string };
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isReviewMode = searchParams.get('review') === 'true';
   const user = useSelector((state: any) => state.user);
 
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
-  const [phase, setPhase] = useState<'inProgress' | 'review'>('inProgress');
+  const [phase, setPhase] = useState<'inProgress' | 'review' | 'reviewUI'>('inProgress');
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [countdown, setCountdown] = useState(0);
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
@@ -33,18 +35,34 @@ export default function ExamRoomPage() {
         const exam = resDetail.data;
         setSelectedExam(exam);
 
-        const resAttempt = await ExamService.startAttempt({ examId, studentId });
-        if (resAttempt.status === 'OK' && resAttempt.data) {
-          const elapsed = (Date.now() - new Date(resAttempt.data.startedAt).getTime()) / 1000;
-          if (elapsed < exam.duration * 60) {
-            // Khôi phục answers từ BE hoặc nếu không có thì {}
-            setAnswers(resAttempt.data.answers || {});
-            setCountdown(Math.floor(exam.duration * 60 - elapsed));
-            setPhase('inProgress');
-            setIsInitialized(true);
-          } else {
-            alert('Thời gian làm bài của lượt thi này đã kết thúc.');
-            router.push('/thi-thu');
+        if (isReviewMode) {
+          const resSub = await ExamService.getStudentSubmissions(studentId);
+          if (resSub.status === 'OK') {
+            const sub = resSub.data.find((s: any) => s.status === 'completed' && (s.examId._id === examId || s.examId === examId));
+            if (sub) {
+              setAnswers(sub.answers || {});
+              setSubmissionResult(sub);
+              setPhase('reviewUI');
+              setIsInitialized(true);
+            } else {
+              alert('Không tìm thấy bài làm để xem lại.');
+              router.push('/thi-thu');
+            }
+          }
+        } else {
+          const resAttempt = await ExamService.startAttempt({ examId, studentId });
+          if (resAttempt.status === 'OK' && resAttempt.data) {
+            const elapsed = (Date.now() - new Date(resAttempt.data.startedAt).getTime()) / 1000;
+            if (elapsed < exam.duration * 60) {
+              // Khôi phục answers từ BE hoặc nếu không có thì {}
+              setAnswers(resAttempt.data.answers || {});
+              setCountdown(Math.floor(exam.duration * 60 - elapsed));
+              setPhase('inProgress');
+              setIsInitialized(true);
+            } else {
+              alert('Thời gian làm bài của lượt thi này đã kết thúc.');
+              router.push('/thi-thu');
+            }
           }
         }
       } catch (err) {
@@ -102,7 +120,7 @@ export default function ExamRoomPage() {
       const res = await ExamService.submitExam({ examId: selectedExam._id!, studentId, studentAnswers: answers });
       if (res.status === 'OK') {
         setSubmissionResult(res.data);
-        setPhase('review');
+        setPhase('reviewUI');
       }
     } catch (err) {
       alert('Lỗi nộp bài.');
@@ -130,11 +148,30 @@ export default function ExamRoomPage() {
   const qList = getQuestionsList(selectedExam);
   const activeQ = qList[activeQIndex - 1];
 
-  return (
-    <main className="min-h-screen bg-[#f8fafc] text-gray-800 text-xs">
-      {phase !== 'inProgress' && <Header />}
+  const checkIsCorrect = (q: any, stdAns: any, correctAns: any) => {
+    if (q.type === 'true_false') {
+      return ['a','b','c','d'].every(sub => stdAns[`${q.id}_${sub}`] === correctAns[`${q.id}_${sub}`]);
+    }
+    const stdVal = stdAns[q.id] ? stdAns[q.id].toString().trim().toLowerCase() : '';
+    const rightVal = correctAns[q.id] ? correctAns[q.id].toString().trim().toLowerCase() : '';
+    return stdVal !== '' && stdVal === rightVal;
+  };
 
-      {phase === 'inProgress' && activeQ && (
+  const checkIsWrong = (q: any, stdAns: any, correctAns: any) => {
+    if (q.type === 'true_false') {
+      return ['a','b','c','d'].some(sub => stdAns[`${q.id}_${sub}`] && stdAns[`${q.id}_${sub}`] !== correctAns[`${q.id}_${sub}`]);
+    }
+    const stdVal = stdAns[q.id] ? stdAns[q.id].toString().trim().toLowerCase() : '';
+    const rightVal = correctAns[q.id] ? correctAns[q.id].toString().trim().toLowerCase() : '';
+    return stdVal !== '' && stdVal !== rightVal;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      <Header />
+      
+      {/* 1. LAYOUT LÀM BÀI HOẶC XEM LẠI BÀI */}
+      {(phase === 'inProgress' || phase === 'reviewUI') && selectedExam && (
         <div className="fixed inset-0 bg-[#f1f5f9] z-50 flex flex-col overflow-hidden select-none">
           <div className="flex-1 flex overflow-hidden">
             {/* Left side: PDF Viewer */}
@@ -161,8 +198,17 @@ export default function ExamRoomPage() {
               <div className="flex flex-col h-full">
                 {/* Header Timer */}
                 <div className="bg-[#1877f2] px-5 py-4 text-white shrink-0">
-                  <div className="text-sm font-medium">Thời gian còn lại</div>
-                  <div className="text-2xl font-bold mt-1">{formatCountdown(countdown)}</div>
+                  {phase === 'reviewUI' ? (
+                    <>
+                      <div className="text-sm font-medium">Kết quả bài làm</div>
+                      <div className="text-2xl font-bold mt-1">{submissionResult?.score} / 10</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm font-medium">Thời gian còn lại</div>
+                      <div className="text-2xl font-bold mt-1">{formatCountdown(countdown)}</div>
+                    </>
+                  )}
                 </div>
 
                 <div className="p-5 flex flex-col gap-6 flex-grow overflow-y-auto">
@@ -181,16 +227,34 @@ export default function ExamRoomPage() {
                   {/* Answer Sheet Grid */}
                   <div className="flex flex-col shrink-0">
                     <div className="text-[15px] text-gray-800 font-bold text-center mb-4">Phiếu trả lời</div>
-                    <div className="grid grid-cols-7 gap-2.5 max-h-[300px] overflow-y-auto pb-2 px-1">
-                      {qList.map((q, idx) => (
-                        <button
-                          key={q.id}
-                          onClick={() => setActiveQIndex(idx + 1)}
-                          className={`py-2 rounded font-medium text-center border text-[13px] transition-all truncate px-0.5 ${activeQIndex === idx + 1 ? 'border-[1.5px] border-[#1877f2] bg-white text-[#1877f2]' : isThpt(selectedExam) && q.type === 'true_false' && ['a','b','c','d'].some(s => answers[`${q.id}_${s}`]) ? 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]' : answers[q.id] ? 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'}`}
-                        >
-                          {getCellLabel(q)}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-7 gap-2.5 max-h-[300px] overflow-y-auto py-2 px-1">
+                      {qList.map((q, idx) => {
+                        const isCorrect = phase === 'reviewUI' && checkIsCorrect(q, answers, selectedExam.answers);
+                        const isWrong = phase === 'reviewUI' && checkIsWrong(q, answers, selectedExam.answers);
+
+                        let btnClass = 'bg-white text-gray-700 border-gray-300 hover:border-gray-400';
+                        if (phase === 'reviewUI') {
+                          if (isCorrect) btnClass = 'bg-green-100 border-green-500 text-green-800 font-bold shadow-sm';
+                          else if (isWrong) btnClass = 'bg-red-100 border-red-500 text-red-800 font-bold shadow-sm';
+                          else btnClass = 'bg-gray-100 border-gray-300 text-gray-400';
+                        } else {
+                          if (activeQIndex === idx + 1) btnClass = 'border-[1.5px] border-[#1877f2] bg-white text-[#1877f2]';
+                          else if (isThpt(selectedExam) && q.type === 'true_false' && ['a','b','c','d'].some(s => answers[`${q.id}_${s}`])) btnClass = 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]';
+                          else if (answers[q.id]) btnClass = 'bg-[#e7f0fd] text-[#1877f2] border-[#c0d6f9]';
+                        }
+
+                        if (phase === 'reviewUI' && activeQIndex === idx + 1) btnClass += ' ring-2 ring-blue-400 border-blue-400';
+
+                        return (
+                          <button
+                            key={q.id}
+                            onClick={() => setActiveQIndex(idx + 1)}
+                            className={`py-2 rounded font-medium text-center border text-[13px] transition-all truncate px-0.5 ${btnClass}`}
+                          >
+                            {getCellLabel(q)}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -200,9 +264,24 @@ export default function ExamRoomPage() {
                       <div className="space-y-4">
                         <input type="text" readOnly placeholder={`Đáp án câu ${activeQIndex}: A, B, C, D...`} value={answers[activeQ.id] ? `Đáp án câu ${activeQIndex}: ${answers[activeQ.id]}` : ''} className="w-full bg-white border border-gray-300 px-4 py-3 rounded-lg text-sm text-gray-500 font-medium focus:outline-none" />
                         <div className="grid grid-cols-4 gap-3">
-                          {['A','B','C','D'].map(o => (
-                            <button key={o} onClick={() => { setAnswers(p => ({ ...p, [activeQ.id]: o })); if (activeQIndex < qList.length) setActiveQIndex(activeQIndex + 1); }} className={`py-2.5 rounded-lg font-bold border transition-all text-sm ${answers[activeQ.id] === o ? 'bg-[#1877f2] text-white border-[#1877f2]' : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'}`}>{o}</button>
-                          ))}
+                          {['A','B','C','D'].map(o => {
+                            let btnClass = 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50';
+                            if (phase === 'reviewUI') {
+                              if (selectedExam.answers[activeQ.id] === o) btnClass = 'bg-green-500 text-white border-green-500 shadow-sm';
+                              else if (answers[activeQ.id] === o) btnClass = 'bg-red-500 text-white border-red-500 shadow-sm';
+                            } else {
+                              if (answers[activeQ.id] === o) btnClass = 'bg-[#1877f2] text-white border-[#1877f2]';
+                            }
+                            return (
+                              <button 
+                                key={o} 
+                                onClick={() => { if (phase !== 'reviewUI') { setAnswers(p => ({ ...p, [activeQ.id]: o })); if (activeQIndex < qList.length) setActiveQIndex(activeQIndex + 1); } }} 
+                                className={`py-2.5 rounded-lg font-bold border transition-all text-sm ${btnClass}`}
+                              >
+                                {o}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -215,9 +294,24 @@ export default function ExamRoomPage() {
                             <div key={s} className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-300">
                               <span className="font-bold text-gray-600 uppercase">Ý {s})</span>
                               <div className="flex gap-2">
-                                {['Đúng', 'Sai'].map(val => (
-                                  <button key={val} onClick={() => setAnswers(p => ({ ...p, [key]: val }))} className={`px-5 py-2 rounded-lg text-sm font-bold border transition-all ${answers[key] === val ? 'bg-[#1877f2] text-white border-[#1877f2]' : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-300'}`}>{val}</button>
-                                ))}
+                                {['Đúng', 'Sai'].map(val => {
+                                  let btnClass = 'bg-white text-gray-600 hover:bg-gray-50 border-gray-300';
+                                  if (phase === 'reviewUI') {
+                                    if (selectedExam.answers[key] === val) btnClass = 'bg-green-500 text-white border-green-500 shadow-sm';
+                                    else if (answers[key] === val) btnClass = 'bg-red-500 text-white border-red-500 shadow-sm';
+                                  } else {
+                                    if (answers[key] === val) btnClass = 'bg-[#1877f2] text-white border-[#1877f2]';
+                                  }
+                                  return (
+                                    <button 
+                                      key={val} 
+                                      onClick={() => { if (phase !== 'reviewUI') setAnswers(p => ({ ...p, [key]: val })) }} 
+                                      className={`px-5 py-2 rounded-lg text-sm font-bold border transition-all ${btnClass}`}
+                                    >
+                                      {val}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                           );
@@ -227,16 +321,25 @@ export default function ExamRoomPage() {
 
                     {activeQ.type === 'short' && (
                       <div className="space-y-2 mt-2">
-                        <input type="text" placeholder="Nhập đáp số trắc nghiệm" value={answers[activeQ.id] || ''} onChange={(e) => setAnswers(p => ({ ...p, [activeQ.id]: e.target.value }))} className="w-full bg-white border border-gray-300 p-3 rounded-lg font-bold text-center text-sm focus:outline-none focus:ring-2 focus:ring-[#1877f2] focus:border-transparent" />
+                        <input type="text" readOnly={phase === 'reviewUI'} placeholder="Nhập đáp số trắc nghiệm" value={answers[activeQ.id] || ''} onChange={(e) => { if (phase !== 'reviewUI') setAnswers(p => ({ ...p, [activeQ.id]: e.target.value })) }} className={`w-full bg-white border p-3 rounded-lg font-bold text-center text-sm focus:outline-none focus:ring-2 focus:ring-[#1877f2] focus:border-transparent ${phase === 'reviewUI' ? (answers[activeQ.id]?.trim().toLowerCase() === selectedExam.answers[activeQ.id]?.trim().toLowerCase() ? 'border-green-500 bg-green-50 text-green-700' : 'border-red-500 bg-red-50 text-red-700') : 'border-gray-300'}`} />
+                        {phase === 'reviewUI' && (
+                          <div className="text-xs font-bold text-green-600 mt-2 text-center">Đáp án đúng: {selectedExam.answers[activeQ.id]}</div>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="p-5 border-t border-gray-200 grid grid-cols-[1fr_2fr] gap-3 bg-white shrink-0">
-                  <button onClick={() => { if(confirm('Rời khỏi phòng thi? Tiến trình làm bài sẽ được lưu.')) router.push('/thi-thu'); }} className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] font-bold py-3 rounded-lg text-center transition-all">Rời khỏi</button>
-                  <button onClick={handleSubmit} className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold py-3 rounded-lg text-center transition-all">Nộp bài</button>
+                <div className="p-5 border-t border-gray-200 bg-white shrink-0">
+                  {phase === 'reviewUI' ? (
+                    <button onClick={() => router.push('/thi-thu')} className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold py-3 rounded-lg text-center transition-all">Quay lại lịch sử</button>
+                  ) : (
+                    <div className="grid grid-cols-[1fr_2fr] gap-3">
+                      <button onClick={() => { if(confirm('Rời khỏi phòng thi? Tiến trình làm bài sẽ được lưu.')) router.push('/thi-thu'); }} className="bg-[#e4e6eb] hover:bg-[#d8dadf] text-[#050505] font-bold py-3 rounded-lg text-center transition-all">Rời khỏi</button>
+                      <button onClick={handleSubmit} className="bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold py-3 rounded-lg text-center transition-all">Nộp bài</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -323,6 +426,6 @@ export default function ExamRoomPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
