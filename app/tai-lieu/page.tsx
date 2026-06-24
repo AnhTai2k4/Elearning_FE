@@ -175,8 +175,25 @@ export default function DocumentPage() {
       <Header />
 
       {/* MAIN LIST & UPLOAD GRID */}
-      <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Mobile Sidebar Dropdown */}
+          <div className="md:hidden bg-white border-b border-gray-200 p-4 shrink-0">
+             <select 
+               value={activeTab} 
+               onChange={(e) => setActiveTab(e.target.value as any)}
+               className="w-full p-2.5 border border-gray-300 rounded-lg font-bold text-[#1e3a8a] bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+             >
+               <option value="all">Tất cả tài liệu</option>
+               <option value="grade-12">Tài liệu Khối 12</option>
+               <option value="grade-11">Tài liệu Khối 11</option>
+               <option value="grade-10">Tài liệu Khối 10</option>
+               {isTeacherOrAdmin && (
+                 <option value="upload">Đăng tải tài liệu mới</option>
+               )}
+             </select>
+          </div>
+
+          {/* Left Sidebar (Desktop) */}
           <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
             {/* User Info */}
             <div className="p-4 border-b border-gray-200 flex items-center gap-3">

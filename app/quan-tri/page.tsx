@@ -278,7 +278,21 @@ export default function AdminPortal() {
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-800 text-sm">
       <Header />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Mobile Sidebar Dropdown */}
+        <div className="md:hidden bg-white border-b border-gray-200 p-4 shrink-0">
+           <select 
+             value={activeTab} 
+             onChange={(e) => setActiveTab(e.target.value as any)}
+             className="w-full p-2.5 border border-gray-300 rounded-lg font-bold text-[#1e3a8a] bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+           >
+             <option value="analytics">Tổng quan hệ thống</option>
+             <option value="students">Quản lý Học viên</option>
+             <option value="courses">Danh sách Khóa học</option>
+             <option value="transactions">Tài chính & Giao dịch</option>
+           </select>
+        </div>
+
         {/* Left Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
           {/* User Info */}

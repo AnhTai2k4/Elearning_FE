@@ -25,6 +25,9 @@ export default function Header() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // --- LOGIC MOBILE MENU ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Fetch thông báo
   const fetchNotifications = async () => {
     if (!user.access_token) return;
@@ -177,7 +180,8 @@ export default function Header() {
         </div>
       </Link>
 
-      <nav className="hidden md:flex gap-6 relative left-40">
+      {/* MAIN NAV (Desktop) */}
+      <nav className="hidden lg:flex gap-6 relative xl:left-20">
         <Link href="/" className="text-lg font-bold hover:text-yellow-500">
           Trang chủ
         </Link>
@@ -386,7 +390,52 @@ export default function Header() {
             </button>
           </div>
         )}
+
+        {/* MOBILE MENU BUTTON (Hamburger) */}
+        <button 
+          className="lg:hidden p-2 text-[#1a367c] hover:bg-gray-100 rounded-md transition-colors"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isMobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
       </div>
+
+      {/* MOBILE NAV DROPDOWN */}
+      {isMobileMenuOpen && (
+        <div className="absolute top-full left-0 w-full bg-white shadow-lg border-t border-gray-100 lg:hidden flex flex-col font-bold text-lg">
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:text-yellow-500 hover:bg-gray-50 text-[#1a367c]">
+            Trang chủ
+          </Link>
+          <Link href="/khoa-hoc" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:text-yellow-500 hover:bg-gray-50 text-[#1a367c]">
+            Khóa học
+          </Link>
+          <Link href="/thi-thu" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:text-yellow-500 hover:bg-gray-50 text-[#1a367c]">
+            Thi thử
+          </Link>
+          <Link href="/so-tay" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:text-yellow-500 hover:bg-gray-50 text-[#1a367c]">
+            Sổ tay
+          </Link>
+          <Link href="/tai-lieu" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:text-yellow-500 hover:bg-gray-50 text-[#1a367c]">
+            Tài liệu
+          </Link>
+          {(user.isTeacher || user.isAdmin) && (
+            <Link href="/giao-vien" onClick={() => setIsMobileMenuOpen(false)} className="p-4 border-b border-gray-100 hover:bg-blue-50 text-blue-600">
+              Giáo viên
+            </Link>
+          )}
+          {user.isAdmin && (
+            <Link href="/quan-tri" onClick={() => setIsMobileMenuOpen(false)} className="p-4 hover:bg-purple-50 text-purple-600">
+              Quản trị
+            </Link>
+          )}
+        </div>
+      )}
 
       <LoginModal
         isOpen={isLoginOpen}

@@ -193,7 +193,20 @@ export default function TeacherPage() {
       {/* Site Header */}
       <Header />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Mobile Sidebar Dropdown */}
+        <div className="md:hidden bg-white border-b border-gray-200 p-4 shrink-0">
+           <select 
+             value={activeMenu} 
+             onChange={(e) => setActiveMenu(e.target.value as any)}
+             className="w-full p-2.5 border border-gray-300 rounded-lg font-bold text-[#1e3a8a] bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+           >
+             {menuItems.map((item) => (
+               <option key={item.id} value={item.id}>{item.label}</option>
+             ))}
+           </select>
+        </div>
+
         {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 hidden md:flex">
           {/* User Info */}
